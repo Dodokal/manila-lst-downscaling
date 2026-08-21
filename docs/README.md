@@ -154,3 +154,14 @@ reorganising the code changed no result.
 | `per_scene_maps needs the per-scene rasters` | The harvest came from cache. Pass `rebuild=True`, or use `run_pipeline`. |
 | Blocky, low-detail maps | Low `sharpened_frac` - optical imagery was cloudy for those scenes. Check `diagnostics.scene_quality`; widening `s2_window_days` may help. |
 | No scenes pass screening | Lower `valid_pixel_threshold`, widen the date range, or raise `max_cloud_cover`. |
+
+
+## Acknowledgment
+
+This repository contains code developed during my internship.
+
+**Developer:** Kalid Hassen Yasin (MSc)
+**Supervisor:** Dr. Getachew Workineh Gella  
+**Program:** Copernicus Master in Digital Earth  
+**Institution:** Paris Lodron University of Salzburg (PLUS)  
+**Research Group:** Geo-Humanitarian Research (Z_GIS)  
