@@ -1,0 +1,24 @@
+# Core geospatial
+rioxarray>=0.15
+rasterio>=1.3
+xarray>=2024.1
+geopandas>=0.14
+shapely>=2.0
+affine>=2.4
+
+# Data access
+earthaccess>=0.9          # NASA Earthdata (ECOSTRESS)
+pystac-client>=0.7        # STAC search (Sentinel-2, Copernicus DEM)
+odc-stac>=0.3             # STAC -> xarray loading
+
+# Analysis
+numpy>=1.24
+pandas>=2.0
+scipy>=1.11
+scikit-learn>=1.3
+joblib>=1.3
+
+# Visualisation
+matplotlib>=3.7
+hvplot>=0.9               # interactive maps (optional)
+bokeh>=3.2                # required by hvplot
