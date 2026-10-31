@@ -1,0 +1,5 @@
+band,threshold_C,n_train,n_test,adequate
+coldest 1 %,23.59,4909,1992,True
+coldest 5 %,25.59,24142,10352,True
+hottest 5 %,50.77,23844,10430,True
+hottest 1 %,53.47,4787,2119,True

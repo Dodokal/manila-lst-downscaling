@@ -1,0 +1,4 @@
+band,local_hours,scenes,samples,pooled_MAE_K,pooled_R2,band_MAE_K,band_R2,R2_gain
+morning,06-09,10,200000,1.4,0.029,1.26,0.154,0.125
+midday,09-15,16,302769,3.52,0.25,3.54,0.226,-0.024
+afternoon,15-19,9,180000,1.18,-0.075,1.03,0.173,0.249

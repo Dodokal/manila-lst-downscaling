@@ -1,0 +1,543 @@
+{
+ "mode": "Day",
+ "study_area": "manila",
+ "bbox": [
+  120.9,
+  14.55,
+  121.04,
+  14.7
+ ],
+ "start": "2024-01-01",
+ "end": "2026-12-31",
+ "n": 66,
+ "scenes": [
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31158_001_51PTS_20240103T235400_0711_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31158_001_51PTS_20240103T235400_0711_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31158_001_51PTS_20240103T235400_0711_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31158_001_51PTS_20240103T235400_0711_01_cloud.tif",
+   "acquired": "2024-01-03T23:54:00.515000+00:00",
+   "local_hour": 7
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31158_002_51PTS_20240103T235452_0711_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31158_002_51PTS_20240103T235452_0711_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31158_002_51PTS_20240103T235452_0711_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31158_002_51PTS_20240103T235452_0711_01_cloud.tif",
+   "acquired": "2024-01-03T23:54:52.484000+00:00",
+   "local_hour": 7
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31289_003_51PTS_20240112T095834_0711_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31289_003_51PTS_20240112T095834_0711_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31289_003_51PTS_20240112T095834_0711_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31289_003_51PTS_20240112T095834_0711_01_cloud.tif",
+   "acquired": "2024-01-12T09:58:34.787000+00:00",
+   "local_hour": 17
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31350_002_51PTS_20240116T082335_0711_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31350_002_51PTS_20240116T082335_0711_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31350_002_51PTS_20240116T082335_0711_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31350_002_51PTS_20240116T082335_0711_01_cloud.tif",
+   "acquired": "2024-01-16T08:23:35.534000+00:00",
+   "local_hour": 16
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31997_015_51PTS_20240227T022029_0711_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31997_015_51PTS_20240227T022029_0711_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31997_015_51PTS_20240227T022029_0711_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_31997_015_51PTS_20240227T022029_0711_01_cloud.tif",
+   "acquired": "2024-02-27T02:20:30.396000+00:00",
+   "local_hour": 10
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_32296_001_51PTS_20240317T083140_0711_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_32296_001_51PTS_20240317T083140_0711_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_32296_001_51PTS_20240317T083140_0711_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_32296_001_51PTS_20240317T083140_0711_01_cloud.tif",
+   "acquired": "2024-03-17T08:31:40.269000+00:00",
+   "local_hour": 16
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_33348_003_51PTS_20240524T052554_0711_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_33348_003_51PTS_20240524T052554_0711_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_33348_003_51PTS_20240524T052554_0711_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_33348_003_51PTS_20240524T052554_0711_01_cloud.tif",
+   "acquired": "2024-05-24T05:25:54.487000+00:00",
+   "local_hour": 13
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_33629_015_51PTS_20240611T083914_0711_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_33629_015_51PTS_20240611T083914_0711_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_33629_015_51PTS_20240611T083914_0711_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_33629_015_51PTS_20240611T083914_0711_01_cloud.tif",
+   "acquired": "2024-06-11T08:39:14.042000+00:00",
+   "local_hour": 16
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_33919_014_51PTS_20240630T012704_0712_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_33919_014_51PTS_20240630T012704_0712_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_33919_014_51PTS_20240630T012704_0712_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_33919_014_51PTS_20240630T012704_0712_01_cloud.tif",
+   "acquired": "2024-06-30T01:27:04.529000+00:00",
+   "local_hour": 9
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_34041_013_51PTS_20240707T221636_0712_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_34041_013_51PTS_20240707T221636_0712_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_34041_013_51PTS_20240707T221636_0712_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_34041_013_51PTS_20240707T221636_0712_01_cloud.tif",
+   "acquired": "2024-07-07T22:16:36.953000+00:00",
+   "local_hour": 6
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_34401_003_51PTS_20240731T024234_0712_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_34401_003_51PTS_20240731T024234_0712_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_34401_003_51PTS_20240731T024234_0712_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_34401_003_51PTS_20240731T024234_0712_01_cloud.tif",
+   "acquired": "2024-07-31T02:42:34.401000+00:00",
+   "local_hour": 10
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_34865_015_51PTS_20240830T011942_0712_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_34865_015_51PTS_20240830T011942_0712_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_34865_015_51PTS_20240830T011942_0712_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_34865_015_51PTS_20240830T011942_0712_01_cloud.tif",
+   "acquired": "2024-08-30T01:19:42.717000+00:00",
+   "local_hour": 9
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35240_003_51PTS_20240923T051802_0712_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35240_003_51PTS_20240923T051802_0712_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35240_003_51PTS_20240923T051802_0712_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35240_003_51PTS_20240923T051802_0712_01_cloud.tif",
+   "acquired": "2024-09-23T05:18:02.229000+00:00",
+   "local_hour": 13
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35423_003_51PTS_20241005T003020_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35423_003_51PTS_20241005T003020_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35423_003_51PTS_20241005T003020_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35423_003_51PTS_20241005T003020_0713_01_cloud.tif",
+   "acquired": "2024-10-05T00:30:20.792000+00:00",
+   "local_hour": 8
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35484_002_51PTS_20241008T225559_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35484_002_51PTS_20241008T225559_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35484_002_51PTS_20241008T225559_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35484_002_51PTS_20241008T225559_0713_01_cloud.tif",
+   "acquired": "2024-10-08T22:55:59.963000+00:00",
+   "local_hour": 6
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35887_012_51PTS_20241103T230156_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35887_012_51PTS_20241103T230156_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35887_012_51PTS_20241103T230156_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_35887_012_51PTS_20241103T230156_0713_01_cloud.tif",
+   "acquired": "2024-11-03T23:01:56.100000+00:00",
+   "local_hour": 7
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36064_003_51PTS_20241115T080629_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36064_003_51PTS_20241115T080629_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36064_003_51PTS_20241115T080629_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36064_003_51PTS_20241115T080629_0713_01_cloud.tif",
+   "acquired": "2024-11-15T08:06:29.042000+00:00",
+   "local_hour": 16
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36125_003_51PTS_20241119T063005_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36125_003_51PTS_20241119T063005_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36125_003_51PTS_20241119T063005_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36125_003_51PTS_20241119T063005_0713_01_cloud.tif",
+   "acquired": "2024-11-19T06:30:05.898000+00:00",
+   "local_hour": 14
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36415_003_51PTS_20241207T231406_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36415_003_51PTS_20241207T231406_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36415_003_51PTS_20241207T231406_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36415_003_51PTS_20241207T231406_0713_01_cloud.tif",
+   "acquired": "2024-12-07T23:14:06.171000+00:00",
+   "local_hour": 7
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36934_001_51PTS_20250110T100203_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36934_001_51PTS_20250110T100203_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36934_001_51PTS_20250110T100203_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_36934_001_51PTS_20250110T100203_0713_01_cloud.tif",
+   "acquired": "2025-01-10T10:02:03.699000+00:00",
+   "local_hour": 18
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37117_002_51PTS_20250122T050850_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37117_002_51PTS_20250122T050850_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37117_002_51PTS_20250122T050850_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37117_002_51PTS_20250122T050850_0713_01_cloud.tif",
+   "acquired": "2025-01-22T05:08:50.161000+00:00",
+   "local_hour": 13
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37117_003_51PTS_20250122T050942_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37117_003_51PTS_20250122T050942_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37117_003_51PTS_20250122T050942_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37117_003_51PTS_20250122T050942_0713_01_cloud.tif",
+   "acquired": "2025-01-22T05:09:42.130000+00:00",
+   "local_hour": 13
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37224_004_51PTS_20250129T024032_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37224_004_51PTS_20250129T024032_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37224_004_51PTS_20250129T024032_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37224_004_51PTS_20250129T024032_0713_01_cloud.tif",
+   "acquired": "2025-01-29T02:40:32.683000+00:00",
+   "local_hour": 10
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37520_017_51PTS_20250217T051553_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37520_017_51PTS_20250217T051553_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37520_017_51PTS_20250217T051553_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37520_017_51PTS_20250217T051553_0713_01_cloud.tif",
+   "acquired": "2025-02-17T05:15:53.964000+00:00",
+   "local_hour": 13
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37941_003_51PTS_20250316T081304_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37941_003_51PTS_20250316T081304_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37941_003_51PTS_20250316T081304_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_37941_003_51PTS_20250316T081304_0713_01_cloud.tif",
+   "acquired": "2025-03-16T08:13:04.869000+00:00",
+   "local_hour": 16
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38063_003_51PTS_20250324T050132_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38063_003_51PTS_20250324T050132_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38063_003_51PTS_20250324T050132_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38063_003_51PTS_20250324T050132_0713_01_cloud.tif",
+   "acquired": "2025-03-24T05:01:32.996000+00:00",
+   "local_hour": 13
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38292_004_51PTS_20250407T232426_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38292_004_51PTS_20250407T232426_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38292_004_51PTS_20250407T232426_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38292_004_51PTS_20250407T232426_0713_01_cloud.tif",
+   "acquired": "2025-04-07T23:24:26.856000+00:00",
+   "local_hour": 7
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38344_014_51PTS_20250411T083057_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38344_014_51PTS_20250411T083057_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38344_014_51PTS_20250411T083057_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38344_014_51PTS_20250411T083057_0713_01_cloud.tif",
+   "acquired": "2025-04-11T08:30:57.441000+00:00",
+   "local_hour": 16
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38405_018_51PTS_20250415T065606_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38405_018_51PTS_20250415T065606_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38405_018_51PTS_20250415T065606_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38405_018_51PTS_20250415T065606_0713_01_cloud.tif",
+   "acquired": "2025-04-15T06:56:06.784000+00:00",
+   "local_hour": 14
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38527_017_51PTS_20250423T034444_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38527_017_51PTS_20250423T034444_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38527_017_51PTS_20250423T034444_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38527_017_51PTS_20250423T034444_0713_01_cloud.tif",
+   "acquired": "2025-04-23T03:44:44.764000+00:00",
+   "local_hour": 11
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38588_016_51PTS_20250427T021004_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38588_016_51PTS_20250427T021004_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38588_016_51PTS_20250427T021004_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38588_016_51PTS_20250427T021004_0713_01_cloud.tif",
+   "acquired": "2025-04-27T02:10:04.425000+00:00",
+   "local_hour": 10
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38904_003_51PTS_20250517T073644_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38904_003_51PTS_20250517T073644_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38904_003_51PTS_20250517T073644_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_38904_003_51PTS_20250517T073644_0713_01_cloud.tif",
+   "acquired": "2025-05-17T07:36:44.308000+00:00",
+   "local_hour": 15
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_40085_001_51PTS_20250801T013811_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_40085_001_51PTS_20250801T013811_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_40085_001_51PTS_20250801T013811_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_40085_001_51PTS_20250801T013811_0713_01_cloud.tif",
+   "acquired": "2025-08-01T01:38:11.548000+00:00",
+   "local_hour": 9
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_40367_012_51PTS_20250819T045908_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_40367_012_51PTS_20250819T045908_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_40367_012_51PTS_20250819T045908_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_40367_012_51PTS_20250819T045908_0713_01_cloud.tif",
+   "acquired": "2025-08-19T04:59:08.907000+00:00",
+   "local_hour": 12
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_41798_001_51PTS_20251119T061138_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_41798_001_51PTS_20251119T061138_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_41798_001_51PTS_20251119T061138_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_41798_001_51PTS_20251119T061138_0713_01_cloud.tif",
+   "acquired": "2025-11-19T06:11:38.593000+00:00",
+   "local_hour": 14
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_41982_001_51PTS_20251201T013141_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_41982_001_51PTS_20251201T013141_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_41982_001_51PTS_20251201T013141_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_41982_001_51PTS_20251201T013141_0713_01_cloud.tif",
+   "acquired": "2025-12-01T01:31:41.136000+00:00",
+   "local_hour": 9
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42104_004_51PTS_20251208T222309_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42104_004_51PTS_20251208T222309_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42104_004_51PTS_20251208T222309_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42104_004_51PTS_20251208T222309_0713_01_cloud.tif",
+   "acquired": "2025-12-08T22:23:09.704000+00:00",
+   "local_hour": 6
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42156_012_51PTS_20251212T072907_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42156_012_51PTS_20251212T072907_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42156_012_51PTS_20251212T072907_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42156_012_51PTS_20251212T072907_0713_01_cloud.tif",
+   "acquired": "2025-12-12T07:29:07.789000+00:00",
+   "local_hour": 15
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42217_011_51PTS_20251216T055344_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42217_011_51PTS_20251216T055344_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42217_011_51PTS_20251216T055344_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42217_011_51PTS_20251216T055344_0713_01_cloud.tif",
+   "acquired": "2025-12-16T05:53:44.126000+00:00",
+   "local_hour": 13
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42777_003_51PTS_20260121T050238_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42777_003_51PTS_20260121T050238_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42777_003_51PTS_20260121T050238_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42777_003_51PTS_20260121T050238_0713_01_cloud.tif",
+   "acquired": "2026-01-21T05:02:38.801000+00:00",
+   "local_hour": 13
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42899_001_51PTS_20260129T015859_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42899_001_51PTS_20260129T015859_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42899_001_51PTS_20260129T015859_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42899_001_51PTS_20260129T015859_0713_01_cloud.tif",
+   "acquired": "2026-01-29T01:58:59.518000+00:00",
+   "local_hour": 9
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42960_003_51PTS_20260202T002855_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42960_003_51PTS_20260202T002855_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42960_003_51PTS_20260202T002855_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_42960_003_51PTS_20260202T002855_0713_01_cloud.tif",
+   "acquired": "2026-02-02T00:28:55.917000+00:00",
+   "local_hour": 8
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43333_016_51PTS_20260226T011704_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43333_016_51PTS_20260226T011704_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43333_016_51PTS_20260226T011704_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43333_016_51PTS_20260226T011704_0713_01_cloud.tif",
+   "acquired": "2026-02-26T01:17:04.590000+00:00",
+   "local_hour": 9
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43394_013_51PTS_20260301T234653_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43394_013_51PTS_20260301T234653_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43394_013_51PTS_20260301T234653_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43394_013_51PTS_20260301T234653_0713_01_cloud.tif",
+   "acquired": "2026-03-01T23:46:53.458000+00:00",
+   "local_hour": 7
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43456_013_51PTS_20260305T221544_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43456_013_51PTS_20260305T221544_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43456_013_51PTS_20260305T221544_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43456_013_51PTS_20260305T221544_0713_01_cloud.tif",
+   "acquired": "2026-03-05T22:15:44.473000+00:00",
+   "local_hour": 6
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43526_001_51PTS_20260310T100435_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43526_001_51PTS_20260310T100435_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43526_001_51PTS_20260310T100435_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43526_001_51PTS_20260310T100435_0713_01_cloud.tif",
+   "acquired": "2026-03-10T10:04:35.369000+00:00",
+   "local_hour": 18
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43587_003_51PTS_20260314T083317_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43587_003_51PTS_20260314T083317_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43587_003_51PTS_20260314T083317_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43587_003_51PTS_20260314T083317_0713_01_cloud.tif",
+   "acquired": "2026-03-14T08:33:17.206000+00:00",
+   "local_hour": 16
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43649_002_51PTS_20260318T070248_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43649_002_51PTS_20260318T070248_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43649_002_51PTS_20260318T070248_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43649_002_51PTS_20260318T070248_0713_01_cloud.tif",
+   "acquired": "2026-03-18T07:02:48.720000+00:00",
+   "local_hour": 15
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43710_001_51PTS_20260322T053214_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43710_001_51PTS_20260322T053214_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43710_001_51PTS_20260322T053214_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43710_001_51PTS_20260322T053214_0713_01_cloud.tif",
+   "acquired": "2026-03-22T05:32:14.005000+00:00",
+   "local_hour": 13
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43833_002_51PTS_20260330T023011_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43833_002_51PTS_20260330T023011_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43833_002_51PTS_20260330T023011_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_43833_002_51PTS_20260330T023011_0713_01_cloud.tif",
+   "acquired": "2026-03-30T02:30:11.638000+00:00",
+   "local_hour": 10
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44146_014_51PTS_20260419T044137_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44146_014_51PTS_20260419T044137_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44146_014_51PTS_20260419T044137_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44146_014_51PTS_20260419T044137_0713_01_cloud.tif",
+   "acquired": "2026-04-19T04:41:37.546000+00:00",
+   "local_hour": 12
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44207_014_51PTS_20260423T030908_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44207_014_51PTS_20260423T030908_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44207_014_51PTS_20260423T030908_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44207_014_51PTS_20260423T030908_0713_01_cloud.tif",
+   "acquired": "2026-04-23T03:09:08.500000+00:00",
+   "local_hour": 11
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44461_004_51PTS_20260509T101613_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44461_004_51PTS_20260509T101613_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44461_004_51PTS_20260509T101613_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44461_004_51PTS_20260509T101613_0713_01_cloud.tif",
+   "acquired": "2026-05-09T10:16:13.817000+00:00",
+   "local_hour": 18
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44523_003_51PTS_20260513T084239_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44523_003_51PTS_20260513T084239_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44523_003_51PTS_20260513T084239_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44523_003_51PTS_20260513T084239_0713_01_cloud.tif",
+   "acquired": "2026-05-13T08:42:39.819000+00:00",
+   "local_hour": 16
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44584_003_51PTS_20260517T070857_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44584_003_51PTS_20260517T070857_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44584_003_51PTS_20260517T070857_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44584_003_51PTS_20260517T070857_0713_01_cloud.tif",
+   "acquired": "2026-05-17T07:08:57.375000+00:00",
+   "local_hour": 15
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44646_001_51PTS_20260521T053425_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44646_001_51PTS_20260521T053425_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44646_001_51PTS_20260521T053425_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44646_001_51PTS_20260521T053425_0713_01_cloud.tif",
+   "acquired": "2026-05-21T05:34:25.228000+00:00",
+   "local_hour": 13
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44646_002_51PTS_20260521T053517_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44646_002_51PTS_20260521T053517_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44646_002_51PTS_20260521T053517_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44646_002_51PTS_20260521T053517_0713_01_cloud.tif",
+   "acquired": "2026-05-21T05:35:17.197000+00:00",
+   "local_hour": 13
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44707_003_51PTS_20260525T040033_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44707_003_51PTS_20260525T040033_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44707_003_51PTS_20260525T040033_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44707_003_51PTS_20260525T040033_0713_01_cloud.tif",
+   "acquired": "2026-05-25T04:00:33.267000+00:00",
+   "local_hour": 12
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44769_003_51PTS_20260529T022612_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44769_003_51PTS_20260529T022612_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44769_003_51PTS_20260529T022612_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_44769_003_51PTS_20260529T022612_0713_01_cloud.tif",
+   "acquired": "2026-05-29T02:26:12.987000+00:00",
+   "local_hour": 10
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_45356_012_51PTS_20260705T221054_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_45356_012_51PTS_20260705T221054_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_45356_012_51PTS_20260705T221054_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_45356_012_51PTS_20260705T221054_0713_01_cloud.tif",
+   "acquired": "2026-07-05T22:10:54.021000+00:00",
+   "local_hour": 6
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_45548_003_51PTS_20260718T065144_0713_02_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_45548_003_51PTS_20260718T065144_0713_02_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_45548_003_51PTS_20260718T065144_0713_02_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_45548_003_51PTS_20260718T065144_0713_02_cloud.tif",
+   "acquired": "2026-07-18T06:51:44.057000+00:00",
+   "local_hour": 14
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_45610_003_51PTS_20260722T051820_0713_02_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_45610_003_51PTS_20260722T051820_0713_02_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_45610_003_51PTS_20260722T051820_0713_02_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_45610_003_51PTS_20260722T051820_0713_02_cloud.tif",
+   "acquired": "2026-07-22T05:18:20.747000+00:00",
+   "local_hour": 13
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46651_003_51PTS_20260927T024228_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46651_003_51PTS_20260927T024228_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46651_003_51PTS_20260927T024228_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46651_003_51PTS_20260927T024228_0713_01_cloud.tif",
+   "acquired": "2026-09-27T02:42:28.641000+00:00",
+   "local_hour": 10
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46713_002_51PTS_20261001T011024_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46713_002_51PTS_20261001T011024_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46713_002_51PTS_20261001T011024_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46713_002_51PTS_20261001T011024_0713_01_cloud.tif",
+   "acquired": "2026-10-01T01:10:24.509000+00:00",
+   "local_hour": 9
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46774_001_51PTS_20261004T233846_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46774_001_51PTS_20261004T233846_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46774_001_51PTS_20261004T233846_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46774_001_51PTS_20261004T233846_0713_01_cloud.tif",
+   "acquired": "2026-10-04T23:38:46.466000+00:00",
+   "local_hour": 7
+  },
+  {
+   "lst_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46836_003_51PTS_20261008T220648_0713_01_LST.tif",
+   "water_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46836_003_51PTS_20261008T220648_0713_01_water.tif",
+   "qc_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46836_003_51PTS_20261008T220648_0713_01_QC.tif",
+   "cloud_file": "manila_6_18_ecostress_data\\ECOv002_L2T_LSTE_46836_003_51PTS_20261008T220648_0713_01_cloud.tif",
+   "acquired": "2026-10-08T22:06:48.386000+00:00",
+   "local_hour": 6
+  }
+ ]
+}

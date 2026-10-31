@@ -179,7 +179,7 @@ def composites(cfg, verbose: bool = True) -> dict:
 
     threshold = float(np.nanpercentile(A, cfg.hotspot_percentile))
     out = {f"MEAN_LST_{cfg.mode}": np.nanmean(A, axis=0),
-           f"HOTSPOT_FREQ_{cfg.mode}": np.nanmean((A >= threshold).astype(float), axis=0),
+           f"HOTSPOT_FREQ_{cfg.mode}": np.nanmean((A >= threshold).astype(float), axis=0),    ## this needs change
            f"P95_LST_{cfg.mode}": np.nanpercentile(A, 95, axis=0)}
 
     paths = {}
@@ -229,7 +229,7 @@ def hot_days(cfg, verbose: bool = True) -> dict:
         n_obs = np.isfinite(sub).sum(axis=0)
         n_hot = (np.nan_to_num(sub, nan=-999) >= cfg.hot_threshold_c).sum(axis=0)
         rate = np.divide(n_hot, np.maximum(n_obs, 1), dtype="float32")
-        days[i] = np.where(n_obs >= cfg.min_obs_per_year, rate * 365.0, np.nan)
+        days[i] = np.where(n_obs >= cfg.min_obs_per_year, rate * 365.0, np.nan)        # needs change buit still ok
         if verbose:
             print(f"  {yr}: {int((years == yr).sum())} scenes · "
                   f"mean {np.nanmean(days[i]):.0f} days/yr above {cfg.hot_threshold_c:.0f} °C")

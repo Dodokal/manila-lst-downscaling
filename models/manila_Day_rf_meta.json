@@ -1,0 +1,28 @@
+{
+  "feature_names": [
+    "blue",
+    "green",
+    "red",
+    "nir",
+    "swir16",
+    "swir22",
+    "dem",
+    "ndvi",
+    "ndbi",
+    "ndwi"
+  ],
+  "n_features": 10,
+  "run_key": "manila_Day",
+  "mode": "Day",
+  "study_area": "manila",
+  "trained": "2026-10-18 22:03",
+  "target": "anomaly (pixel minus scene mean), kelvin",
+  "split": "70/30 stratified by temperature quantile",
+  "pattern_MAE_K": 2.39,
+  "pattern_R2": 0.1416,
+  "params": {
+    "n_estimators": 100,
+    "max_depth": 15,
+    "min_samples_leaf": 5
+  }
+}
