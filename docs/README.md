@@ -6,7 +6,7 @@ satellite overpass, for neighbourhood-scale heat-vulnerability assessment.
 Geo-Humanitarian Research (Z_GIS), Paris Lodron University of Salzburg,
 in partnership with Médecins Sans Frontières.
 
-> **v2.1 answers MSF's delivery feedback of 06 Oct 2026.** All temperatures are now in
+> **v2.1.** All temperatures are now in
 > °C, there is no anomaly training, Sentinel-2 is used pixel by pixel with no scene
 > cloud threshold, and the ECOSTRESS stripes are removed at the source (QC bits 2-3).
 > The evidence is in [`CLEANING_EVIDENCE.md`](CLEANING_EVIDENCE.md); what changed is in
