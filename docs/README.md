@@ -27,7 +27,7 @@ Source: [`dataflow.mmd`](dataflow.mmd) (Mermaid).
 
 | What | How |
 |---|---|
-| Python 3.11-3.13 | a clean virtual environment is strongly recommended - MSF's install picked up a conflicting `rasterio` from another environment |
+| Python 3.11-3.13 | a clean virtual environment is strongly recommended -don't install picked up a conflicting `rasterio` from another environment |
 | Packages | `python -m venv .venv` → activate → `pip install -r requirements.txt` → `python -m ipykernel install --user --name lst-v21` and pick the **lst-v21** kernel in Jupyter |
 | NASA Earthdata account | free, https://urs.earthdata.nasa.gov - needed for ECOSTRESS downloads |
 | Earthdata login | in the notebook: `earthaccess.login(persist=True)`. The first time it asks for user name and password and stores them in a `.netrc` file in your home folder; afterwards login is silent. Alternatively set environment variables `EARTHDATA_USERNAME` and `EARTHDATA_PASSWORD` before starting Jupyter. |
@@ -144,7 +144,7 @@ python tests/test_isolation.py           # study areas cannot read each other's 
 |---|---|
 | `docs/README.md` | this file |
 | `docs/CLEANING_EVIDENCE.md` | the pixel-level audit behind v2.1, with figures |
-| `docs/CHANGELOG.md` | v2.0 → v2.1 changes, each mapped to MSF's feedback |
+| `docs/CHANGELOG.md` | v2.0 → v2.1 changes, each mapped|
 | `docs/MODULES.md` | every module and its public interface |
 | `docs/OUTPUTS.md` | catalogue of every file the pipeline writes |
 
