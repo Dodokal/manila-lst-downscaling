@@ -10,13 +10,18 @@ Two details matter and are easy to lose in a refactor:
 
 * Each scene's cleaned 70 m array is retained in :class:`Harvest.scenes`, so the map stage
   does not have to re-read and re-clean every granule.
-* Gap-filled pixels are **excluded from training** through ``~filled_mask`` while remaining
-  in the delivered maps. The model is never fitted to interpolated values.
+* Only pixels that survive the v2.1 cleaning (``preprocess.prepare_scene``) are sampled,
+  and shoreline pixels are excluded. Grade C scenes are skipped and logged with the reason
+  in ``rejected_scenes_<area>_<mode>.csv``.
+* Temperatures are in **degrees Celsius** from the moment a granule is read.
+* Each sample keeps its row and column on the coarse grid, so accuracy can be measured on
+  held-out spatial blocks rather than on random (spatially correlated) pixels.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -28,9 +33,10 @@ from . import preprocess as pre
 @dataclass
 class SceneData:
     """One overpass: its cleaned thermal array and acquisition metadata."""
-    lst: object                 # xr.DataArray, kelvin, on the coarse grid
+    lst: object                 # xr.DataArray, °C, on the coarse grid, NaN where not clean
     scene: object               # acquire.Scene
     s2_info: dict
+    clean: object = None        # preprocess.SceneClean (masks and quality report)
 
 
 @dataclass
@@ -65,11 +71,13 @@ class SceneStub:
 class Harvest:
     """The pooled training set and the per-scene material behind it."""
     X: np.ndarray
-    y: np.ndarray               # kelvin
+    y: np.ndarray               # °C
     scene_key: np.ndarray       # which overpass each sample came from
     lulc: np.ndarray | None     # land-cover code per sample, when available
     scenes: dict = field(default_factory=dict)
     gaps: pd.DataFrame = field(default_factory=pd.DataFrame)
+    rc: np.ndarray | None = None            # (n, 2) row, column on the coarse grid
+    quality: pd.DataFrame = field(default_factory=pd.DataFrame)
 
     @property
     def n_scenes(self) -> int:
@@ -86,8 +94,9 @@ class Harvest:
         keys = list(self.scenes)
         np.savez_compressed(
             path,
-            run_key=np.array([key]),
+            run_key=np.array([key]), units=np.array(["degC"]),
             X=self.X, y=self.y, scene_key=self.scene_key.astype(str),
+            rc=self.rc if self.rc is not None else np.zeros((0, 2), int),
             lulc=self.lulc if self.lulc is not None else np.array([]),
             has_lulc=np.array([self.lulc is not None]),
             scene_keys=np.array(keys, dtype=str),
@@ -104,6 +113,10 @@ class Harvest:
         cache from another study area being read as though it belonged to this one.
         """
         z = np.load(path, allow_pickle=False)
+        if "units" not in z or "rc" not in z:
+            raise ValueError(
+                f"{path} was written by v2.0 (Kelvin, no pixel coordinates). It cannot be "
+                "used by v2.1 - re-run 01_pipeline with rebuild=True.")
         if expect_key and "run_key" in z:
             found = str(z["run_key"][0])
             if found and found != expect_key:
@@ -116,10 +129,15 @@ class Harvest:
         gaps = pd.DataFrame({"date": [k[:10] for k in z["scene_keys"]],
                              "utc": [k[11:] for k in z["scene_keys"]],
                              "s2_gap_days": z["gap_days"], "s2_items": z["n_items"]})
+        quality = pd.DataFrame()
+        qp = Path(str(path)).with_name(Path(str(path)).name.replace("harvest_", "scene_quality_")
+                                       .replace(".npz", ".csv"))
+        if qp.exists():
+            quality = pd.read_csv(qp)
         return cls(X=z["X"], y=z["y"],
                    scene_key=z["scene_key"].astype(object),
                    lulc=z["lulc"] if bool(z["has_lulc"][0]) else None,
-                   scenes=scenes, gaps=gaps)
+                   scenes=scenes, gaps=gaps, rc=z["rc"], quality=quality)
 
     def summary(self) -> str:
         years = pd.Series([k[:4] for k in self.scene_key]).value_counts().sort_index()
@@ -167,71 +185,91 @@ def collect(cfg, scenes=None, grids=None, since: str | None = None, verbose: boo
             "harvest.collect needs scenes and grids when no cache is available. "
             "Run the pipeline notebook first, or pass cache=True after a completed run.")
     rng = np.random.default_rng(0)
-    X_parts, y_parts, k_parts, l_parts, gap_rows = [], [], [], [], []
+    X_parts, y_parts, k_parts, l_parts, rc_parts, gap_rows = [], [], [], [], [], []
     kept: dict[str, SceneData] = {}
+    reports, rejected = [], []
 
     selected = [s for s in scenes
                 if since is None or s.date >= since]
     if verbose:
         print(f"{cfg.mode}: harvesting from {len(selected)} overpasses\n")
 
+    def reject(sc, reason, rep=None):
+        r = dict(rep or {"date": sc.date, "utc": sc.utc, "local_hour": sc.local_hour})
+        r["grade"], r["reject_reason"] = "C", reason
+        rejected.append(r)
+        reports.append(r)
+        if verbose:
+            print(f"  [{i}/{len(selected)}] {sc.key}: rejected - {reason}")
+
     for i, sc in enumerate(selected, 1):
-        masked = pre.qc_mask_lst(sc.lst_file, sc.qc_file)
-        if masked is None:
+        clean = pre.prepare_scene(cfg, sc, grids.coarse, grids.land_coarse)
+        if clean is None:
+            reject(sc, "does not overlap the study area")
             continue
-        clipped = pre.clip_and_mask(masked, sc.water_file, sc.cloud_file,
-                                    cfg.bbox, cfg.crs, cfg.max_cloud_cover)
-        if clipped is None:
+        if clean.grade == "C":
+            reject(sc, clean.report.get("reject_reason", "grade C"), clean.report)
             continue
 
-        lst = clipped.rio.reproject_match(grids.coarse).rio.write_nodata(np.nan)
-        cleaned, filled_mask, rep = pre.clean_scene(lst.values.astype(float))
-        lst = lst.copy(data=cleaned)
+        lst = clean.lst
+        values = lst.values.astype(float)
 
         feats, info = cov.s2_for_date(cfg, grids, sc.date, cfg.res_coarse,
                                       grids.coarse, grids.dem_coarse)
         if feats is None:
-            if verbose:
-                print(f"  [{i}/{len(selected)}] {sc.key}: no optical imagery in window")
+            reject(sc, "no clear Sentinel-2 pixel within "
+                       f"±{cfg.s2_max_window_days} d", clean.report)
             continue
 
-        # train only on observed pixels: finite, plausible, and not interpolated
-        m = cov.valid_mask(feats, cfg.features,
-                           extra=np.isfinite(cleaned) & (cleaned > 100) & ~filled_mask)
+        # train only on clean, observed, non-shoreline pixels with complete predictors
+        m = cov.valid_mask(feats, cfg.features, extra=clean.train)
         n = int(m.sum())
-        if n < 500:
-            if verbose:
-                print(f"  [{i}/{len(selected)}] {sc.key}: only {n} valid pixels")
+        if n < cfg.min_train_px:
+            reject(sc, f"only {n} clean pixels with optical predictors", clean.report)
             continue
 
         idx = np.arange(n)
         if n > cfg.px_per_scene:
             idx = rng.choice(n, cfg.px_per_scene, replace=False)
+        rows_, cols_ = np.nonzero(m)
 
         X_parts.append(cov.stack(feats, cfg.features, m)[idx])
-        y_parts.append(cleaned[m][idx])
+        y_parts.append(values[m][idx])
         k_parts.append(np.full(len(idx), sc.key, dtype=object))
+        rc_parts.append(np.c_[rows_[idx], cols_[idx]])
         if grids.has_landcover:
             l_parts.append(grids.wc_coarse[m][idx])
 
-        kept[sc.key] = SceneData(lst=lst, scene=sc, s2_info=info)
+        kept[sc.key] = SceneData(lst=lst, scene=sc, s2_info=info, clean=clean)
+        rep = dict(clean.report, s2_gap_days=info["gap_days"], s2_gap_p90=info.get("gap_p90"),
+                   s2_items=info["n_items"])
+        reports.append(rep)
         gap_rows.append({"date": sc.date, "utc": sc.utc, "mode": cfg.mode,
                          "s2_gap_days": info["gap_days"], "s2_items": info["n_items"],
                          "cloud_lt": info["cloud_lt"]})
         if verbose:
-            rows = rep.get("missing_rows", 0)
-            extra = f" · {rows} dead lines filled" if rows else ""
-            print(f"  [{i}/{len(selected)}] {sc.key}: {len(idx):,} samples · "
-                  f"S2 gap {info['gap_days']:.0f} d{extra}")
+            print(f"  [{i}/{len(selected)}] {sc.key}: grade {clean.grade} · "
+                  f"{len(idx):,} samples · clean {100 * clean.report['clean_land_frac']:.0f}% · "
+                  f"S2 gap {info['gap_days']:.0f} d")
+
+    quality = pd.DataFrame(reports)
+    quality.to_csv(cfg.path("products", f"scene_quality_{cfg.key}.csv"), index=False)
+    pd.DataFrame(rejected).to_csv(cfg.path("products", f"rejected_scenes_{cfg.key}.csv"),
+                                  index=False)
+    if verbose:
+        print(f"\n{len(kept)} scenes kept · {len(rejected)} rejected "
+              f"(reasons in rejected_scenes_{cfg.key}.csv)")
 
     if not X_parts:
-        raise RuntimeError("no usable scenes - relax the quality threshold or widen the dates")
+        raise RuntimeError("no usable scenes - every overpass was rejected; see "
+                           f"rejected_scenes_{cfg.key}.csv")
 
     h = Harvest(X=np.vstack(X_parts), y=np.concatenate(y_parts),
                 scene_key=np.concatenate(k_parts),
                 lulc=np.concatenate(l_parts) if l_parts else None,
-                scenes=kept, gaps=pd.DataFrame(gap_rows))
-    h.gaps.to_csv(cfg.path("products", f"s2_gap_perscene_{cfg.mode}.csv"), index=False)
+                scenes=kept, gaps=pd.DataFrame(gap_rows),
+                rc=np.vstack(rc_parts).astype(int), quality=quality)
+    h.gaps.to_csv(cfg.path("products", f"s2_gap_perscene_{cfg.key}.csv"), index=False)
     if cache:
         h.save(cache_path(cfg), key=cfg.key)
         if verbose:

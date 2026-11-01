@@ -10,6 +10,15 @@ reused one multi-year composite for every scene, which made the predictors ident
 overpasses - the model then had no way to distinguish scenes and pooled skill collapsed to
 near zero. Pairing per scene reduced the median optical-thermal gap from 57 days to about
 two and is the single largest improvement in the project's history.
+
+**v2.1 - every usable Sentinel-2 pixel, no scene-level cloud threshold.** v2.0 searched
+with a scene cloud-cover ladder (< 10, 30, 50, 80 %) and then *averaged all bands over time
+without any per-pixel cloud mask*, so cloudy acquisitions were blended into the predictors.
+Now no scene is discarded for its cloud percentage (``s2_scene_cloud_max = 100``). Each
+pixel is screened with the Scene Classification Layer (no data, defective, cloud shadow,
+medium/high cloud, cirrus removed) and the median of its clear observations is taken.
+Pixels with no clear look within ±``s2_window_days`` are filled from progressively wider
+windows up to ±``s2_max_window_days``, and the per-pixel gap is recorded.
 """
 
 from __future__ import annotations
@@ -29,9 +38,29 @@ from rasterio.warp import transform_bounds
 STAC_URL = "https://earth-search.aws.element84.com/v1"
 S2_COLLECTION = "sentinel-2-l2a"
 DEM_COLLECTION = "cop-dem-glo-30"
-WC_URL = ("https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/"
-          "ESA_WorldCover_10m_2021_v200_N12E120_Map.tif")
+WC_TEMPLATE = ("https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/"
+               "ESA_WorldCover_10m_2021_v200_{tile}_Map.tif")
 S2_BANDS = ["red", "green", "blue", "nir", "swir16", "swir22"]
+# Scene Classification Layer classes that are not a clear view of the surface:
+# 0 no data, 1 saturated/defective, 3 cloud shadow, 8 cloud medium, 9 cloud high, 10 cirrus
+SCL_NOT_CLEAR = (0, 1, 3, 8, 9, 10)
+
+
+def worldcover_tiles(bbox) -> list[str]:
+    """ESA WorldCover 3x3 degree tile names covering ``bbox``.
+
+    v2.0 hard-coded the Manila tile (N12E120), so every other city reported "land cover
+    unavailable" and lost its zonal statistics.
+    """
+    import math
+    w, s, e, n = bbox
+    tiles = []
+    for lat in range(int(math.floor(s / 3) * 3), int(math.floor(n / 3) * 3) + 1, 3):
+        for lon in range(int(math.floor(w / 3) * 3), int(math.floor(e / 3) * 3) + 1, 3):
+            ns = f"N{lat:02d}" if lat >= 0 else f"S{-lat:02d}"
+            ew = f"E{lon:03d}" if lon >= 0 else f"W{-lon:03d}"
+            tiles.append(ns + ew)
+    return tiles
 
 
 def safe_ratio(a, b):
@@ -76,6 +105,21 @@ class Grids:
     def has_landcover(self) -> bool:
         return self.wc_coarse is not None
 
+    @property
+    def land_coarse(self) -> np.ndarray | None:
+        """Land pixels of the study area at the coarse grid (WorldCover not water)."""
+        if self.wc_coarse is None:
+            return None
+        return np.isfinite(self.wc_coarse) & (self.wc_coarse != 80)
+
+    @property
+    def land_fine(self) -> np.ndarray | None:
+        """Land pixels at 10 m - used to cut the delivered maps at the real shoreline
+        rather than along the 70 m ECOSTRESS water mask."""
+        if self.wc_fine is None:
+            return None
+        return np.isfinite(self.wc_fine) & (self.wc_fine != 80)
+
 
 def build_grids(cfg, load_landcover: bool = True) -> Grids:
     """Construct the reference grids and load DEM and land cover onto them."""
@@ -103,8 +147,14 @@ def build_grids(cfg, load_landcover: bool = True) -> Grids:
             # Clip before reading: the source tile is 36000 x 36000 px and reading it
             # whole exhausts memory.
             w, s, e, n = cfg.bbox
-            wc = (rxr.open_rasterio(WC_URL, masked=True, chunks=True).squeeze()
-                  .rio.clip_box(minx=w, miny=s, maxx=e, maxy=n).compute())
+            parts = [(rxr.open_rasterio(WC_TEMPLATE.format(tile=t), masked=True, chunks=True)
+                      .squeeze().rio.clip_box(minx=w, miny=s, maxx=e, maxy=n).compute())
+                     for t in worldcover_tiles(cfg.bbox)]
+            if len(parts) == 1:
+                wc = parts[0]
+            else:
+                from rioxarray.merge import merge_arrays
+                wc = merge_arrays(parts)
             wc_c = wc.rio.reproject_match(coarse, resampling=Resampling.nearest).values.astype(float)
             wc_f = wc.rio.reproject_match(fine, resampling=Resampling.nearest).values.astype(float)
             print(f"land cover: {wc.shape} -> {wc_c.shape} / {wc_f.shape}")
@@ -115,44 +165,82 @@ def build_grids(cfg, load_landcover: bool = True) -> Grids:
                  wc_coarse=wc_c, wc_fine=wc_f, catalog=catalog)
 
 
-def _s2_items(cfg, catalog, date: str):
-    """Sentinel-2 items near a date, relaxing the cloud filter until something is found."""
-    d0 = (datetime.strptime(date, "%Y-%m-%d")
-          - timedelta(days=cfg.s2_window_days)).strftime("%Y-%m-%d")
-    d1 = (datetime.strptime(date, "%Y-%m-%d")
-          + timedelta(days=cfg.s2_window_days)).strftime("%Y-%m-%d")
-    for cloud in cfg.s2_cloud_ladder:
-        items = catalog.search(collections=S2_COLLECTION, bbox=cfg.bbox,
-                               datetime=f"{d0}/{d1}",
-                               query={"eo:cloud_cover": {"lt": cloud}}).item_collection()
-        if len(items):
-            return items, cloud
-    return [], None
+def _s2_search(cfg, catalog, date: str, half: int, inner: int = -1):
+    """Sentinel-2 items within ±``half`` days of ``date`` but outside ±``inner``."""
+    t0 = datetime.strptime(date, "%Y-%m-%d")
+    d0 = (t0 - timedelta(days=half)).strftime("%Y-%m-%d")
+    d1 = (t0 + timedelta(days=half)).strftime("%Y-%m-%d")
+    query = ({"eo:cloud_cover": {"lt": cfg.s2_scene_cloud_max}}
+             if cfg.s2_scene_cloud_max < 100 else None)
+    items = catalog.search(collections=S2_COLLECTION, bbox=cfg.bbox,
+                           datetime=f"{d0}/{d1}", query=query).item_collection()
+    if inner >= 0:
+        items = [i for i in items
+                 if abs((i.datetime.replace(tzinfo=None) - t0).days) > inner]
+    return list(items)
+
+
+def _windows(cfg):
+    w = [cfg.s2_window_days]
+    while w[-1] < cfg.s2_max_window_days:
+        w.append(min(w[-1] * 2, cfg.s2_max_window_days))
+    return w
 
 
 def s2_for_date(cfg, grids: Grids, date: str, resolution: int, match_to, dem):
-    """Per-scene optical covariates, snapped to ``match_to``.
+    """Per-scene optical covariates from every clear Sentinel-2 pixel, snapped to ``match_to``.
 
     Returns
     -------
     (features, info)
-        ``features`` is a dict keyed by the names in ``cfg.features``; ``info`` reports the
-        gap in days to the nearest acquisition, how many items were used, and the cloud
-        threshold that produced them. ``(None, info)`` if no imagery is available.
+        ``features`` is a dict keyed by the names in ``cfg.features``. ``info`` reports the
+        number of acquisitions used, the per-pixel gap to the clear observation (median and
+        90th percentile, days), and the share of pixels each window filled.
+        ``(None, info)`` if no clear imagery exists within ±``s2_max_window_days``.
     """
     import pandas as pd
 
-    items, cloud = _s2_items(cfg, grids.catalog, date)
-    if len(items) == 0:
-        return None, {"n_items": 0, "gap_days": np.nan, "cloud_lt": None}
+    shape = match_to.shape
+    comp = {b: np.full(shape, np.nan) for b in S2_BANDS}
+    gap = np.full(shape, np.nan)
+    t0 = pd.Timestamp(date)
+    n_items, filled, inner = 0, {}, -1
 
-    ds = odc.stac.load(items, bbox=cfg.bbox, bands=S2_BANDS, resolution=resolution,
-                       chunks={}, groupby="solar_day", crs=cfg.crs, resampling="bilinear")
-    ds = ds.rio.reproject_match(match_to, resampling=Resampling.average)
-    band = lambda k: ds[k].mean(dim="time").values.astype(float)   # noqa: E731
+    for half in _windows(cfg):
+        need = ~np.isfinite(comp["red"])
+        if not need.any():
+            break
+        items = _s2_search(cfg, grids.catalog, date, half, inner)
+        inner = half
+        if not items:
+            continue
+        n_items += len(items)
+        ds = odc.stac.load(items, bbox=cfg.bbox, bands=S2_BANDS + ["scl"],
+                           resolution=resolution, chunks={"x": 1024, "y": 1024},
+                           groupby="solar_day", crs=cfg.crs, dtype="float32",
+                           resampling={"scl": "nearest", "*": "bilinear"})
+        clear = ~ds["scl"].isin(SCL_NOT_CLEAR) & np.isfinite(ds["scl"])
+        bands = ds[S2_BANDS].where(clear & (ds["red"] > 0))
+        med = bands.median(dim="time", skipna=True)
+        days = xr.DataArray(np.abs((pd.to_datetime(ds.time.values) - t0).days).astype(float),
+                            dims="time", coords={"time": ds.time})
+        dgap = days.where(clear).min(dim="time", skipna=True)
 
-    blue, green, red = band("blue"), band("green"), band("red")
-    nir, swir16, swir22 = band("nir"), band("swir16"), band("swir22")
+        out = xr.merge([med, dgap.rename("gap")]).compute()
+        out = out.rio.write_crs(cfg.crs).rio.reproject_match(match_to,
+                                                             resampling=Resampling.average)
+        new = need & np.isfinite(out["red"].values)
+        for b in S2_BANDS:
+            comp[b][new] = out[b].values[new]
+        gap[new] = out["gap"].values[new]
+        filled[half] = round(float(new.mean()), 3)
+
+    if not np.isfinite(comp["red"]).any():
+        return None, {"n_items": n_items, "gap_days": np.nan, "gap_p90": np.nan,
+                      "cloud_lt": cfg.s2_scene_cloud_max, "filled": filled}
+
+    blue, green, red = comp["blue"], comp["green"], comp["red"]
+    nir, swir16, swir22 = comp["nir"], comp["swir16"], comp["swir22"]
     features = {
         "blue": blue, "green": green, "red": red, "nir": nir,
         "swir16": swir16, "swir22": swir22, "dem": dem,
@@ -160,8 +248,11 @@ def s2_for_date(cfg, grids: Grids, date: str, resolution: int, match_to, dem):
         "ndbi": safe_ratio(swir16, nir),     # built-up
         "ndwi": safe_ratio(green, nir),      # moisture
     }
-    gaps = [abs((pd.Timestamp(i.datetime.date()) - pd.Timestamp(date)).days) for i in items]
-    return features, {"n_items": len(items), "gap_days": float(min(gaps)), "cloud_lt": cloud}
+    g = gap[np.isfinite(gap)]
+    return features, {"n_items": n_items,
+                      "gap_days": float(np.median(g)) if g.size else np.nan,
+                      "gap_p90": float(np.percentile(g, 90)) if g.size else np.nan,
+                      "cloud_lt": cfg.s2_scene_cloud_max, "filled": filled}
 
 
 def stack(features: dict, order, mask=None) -> np.ndarray:

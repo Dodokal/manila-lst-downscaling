@@ -31,14 +31,14 @@ Modules
 -------
 config        study area, paths, constants - everything tunable in one place
 acquire       granule search, streaming quality screen, resilient download
-preprocess    QC masking, water/cloud removal, detector gap filling
-covariates    reference grids, DEM, land cover, per-scene Sentinel-2 pairing
+preprocess    QC + stripe masking, cloud/shore buffers, destriping, grading (°C)
+covariates    reference grids, DEM, land cover, per-pixel clear Sentinel-2 composites
 harvest       assembles the pooled training set across overpasses
-model         training on the anomaly target, accuracy, persistence
+model         one Random Forest per overpass in °C, spatial-block accuracy
 products      per-scene maps, planner composites, hot-day layers
 diagnostics   validation analyses (residuals, land cover, time of day, quality)
 session       restore a completed run from disk, without network access
-transfer      transferability testing against another city
+transfer      retired in v2.1 (see module docstring)
 viz           figures
 
 Design notes
@@ -50,13 +50,16 @@ Two decisions determine the results and are documented at their point of use:
   composite makes the predictors identical across overpasses, and the model then cannot
   distinguish scenes at all.
 
-* **Anomaly target** (`model.train`). The model predicts each pixel's departure from its
-  scene mean, not absolute temperature. Scene level depends on weather, season and hour,
-  none of which are visible to Sentinel-2; it is supplied instead by ECOSTRESS itself
-  through the residual correction.
+* **One model per overpass, absolute °C** (`model.train`). Each overpass is fitted on its
+  own clean 70 m pixels, so the model learns that scene's level and pattern directly in
+  degrees Celsius (the NASA ARSET design). No anomaly target, no Kelvin.
+
+* **Clean input before anything else** (`preprocess.prepare_scene`). QC-flagged stripe
+  pixels, cloud fringes and undetected cloud are removed, residual detector lines are
+  corrected, and every overpass is graded; grade C overpasses are rejected with a reason.
 """
 
-__version__ = "2.0.1"
+__version__ = "2.1.0"
 
 from .config import Config
 from .pipeline import run_pipeline

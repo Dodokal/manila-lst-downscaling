@@ -2,22 +2,24 @@
 Model training, accuracy and persistence.
 =========================================
 
-One Random Forest is trained across all overpasses, predicting the **anomaly** - each
-pixel's departure from its own scene mean - rather than absolute temperature.
+**v2.1: one Random Forest per overpass, trained on absolute land surface temperature in
+degrees Celsius.** No anomaly target, no Kelvin anywhere.
 
-Why the anomaly. Individual scenes over a dense tropical city are internally uniform, often
-varying by under 1 K across the whole area, while the *level* differs by tens of degrees
-between overpasses. Asking the model for absolute temperature forces it to infer that level
-from optical reflectance alone, which is impossible: weather, season and hour of day leave
-no signature in Sentinel-2. Being 6 K wrong on a scene with 1 K of internal spread drives
-R² to around -40 even when the spatial pattern is entirely correct. The level is already
-available from ECOSTRESS itself and is restored by the residual correction at map time, so
-the model is trained only on what it can actually learn.
+Why per overpass. Sentinel-2 cannot see weather, season or hour of day, so a single model
+pooled across overpasses cannot know whether a roof is at 30 °C or 55 °C - v2.0 worked
+around that by training on the anomaly (pixel minus scene mean). The standard alternative,
+and the design of the NASA ARSET ECOSTRESS downscaling method this project follows, is to
+fit the relationship *within* each overpass: every scene's model learns its own level and
+its own surface-temperature-to-reflectance relationship directly in °C, from that scene's
+pixels at 70 m, and is then applied to the same scene's 10 m Sentinel-2 predictors. This is
+the scale-invariance assumption behind TsHARP, DisTrad and the data-mining sharpener.
 
-Two accuracy figures are reported. **Pattern** accuracy, in anomaly space, is the honest
-measure of downscaling skill and the one to quote. **Absolute** accuracy, after the scene
-level is added back, carries *identical* MAE and RMSE and differs only because the variance
-denominator grows - it is not additional skill.
+Accuracy is measured on **spatial blocks** (``cv_block_m``, default ~1 km) held out within
+each scene, not on random pixels: neighbouring 70 m pixels are strongly correlated, and a
+random pixel split would let the model be scored on near-copies of its training data.
+
+What to quote: per-scene MAE and RMSE in °C, and the median per-scene R². A pooled R² across
+scenes is not reported, because between-scene level differences would inflate it.
 """
 
 from __future__ import annotations
@@ -31,7 +33,6 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.model_selection import GroupKFold, train_test_split
 
 
 def metrics(true, pred) -> tuple[float, float, float]:
@@ -41,174 +42,176 @@ def metrics(true, pred) -> tuple[float, float, float]:
             float(r2_score(true, pred)))
 
 
-def temperature_strata(y, n_strata: int = 10) -> np.ndarray:
-    """Quantile bins used to stratify the split.
+def block_split(rc: np.ndarray, block_px: int, test_size: float, seed: int):
+    """Train/test indices with whole spatial blocks held out.
 
-    A purely random split leaves representation of the rare hot tail to chance;
-    stratifying guarantees hot and cold pixels appear proportionally on both sides.
-    Bins too small to stratify are merged into their neighbour.
+    Parameters
+    ----------
+    rc : (n, 2) int array of row, column on the coarse grid.
     """
-    edges = np.unique(np.quantile(y, np.linspace(0, 1, n_strata + 1)))
-    s = np.clip(np.digitize(y, edges[1:-1]), 0, max(len(edges) - 2, 0))
-    for b in np.where(np.bincount(s, minlength=max(len(edges) - 1, 1)) < 2)[0]:
-        s[s == b] = max(b - 1, 0)
-    return s
+    blk = (rc[:, 0] // block_px) * 100_000 + (rc[:, 1] // block_px)
+    ub = np.unique(blk)
+    rng = np.random.default_rng(seed)
+    test_blocks = rng.choice(ub, size=max(1, int(round(test_size * len(ub)))), replace=False)
+    te = np.isin(blk, test_blocks)
+    return np.where(~te)[0], np.where(te)[0]
+
+
+def _hour(h, key):
+    sd = h.scenes.get(key) if hasattr(h, "scenes") else None
+    return getattr(getattr(sd, "scene", sd), "local_hour", None) if sd is not None else None
+
+
+def _rf(cfg, n_estimators=None):
+    return RandomForestRegressor(n_estimators=n_estimators or cfg.rf_estimators,
+                                 max_depth=cfg.rf_max_depth,
+                                 min_samples_leaf=cfg.rf_min_leaf,
+                                 random_state=cfg.seed_model, n_jobs=-1)
 
 
 @dataclass
 class Fit:
-    """A trained model with its accuracy and the indices behind it."""
-    rf: RandomForestRegressor
-    y_anom: np.ndarray
-    scene_mean: dict
+    """One model per overpass, with held-out accuracy.
+
+    ``train_idx`` and ``test_idx`` index the pooled harvest arrays, so the diagnostics can
+    work across all scenes at once; :meth:`predict` routes each sample to its own scene's
+    model.
+    """
+    models: dict                        # scene key -> RandomForestRegressor
+    y: np.ndarray                       # observed LST, °C (the training target)
     train_idx: np.ndarray
     test_idx: np.ndarray
-    pattern: tuple                      # (MAE, RMSE, R²) in anomaly space
-    absolute: tuple                     # (MAE, RMSE, R²) after restoring scene level
+    overall: tuple                      # (MAE, RMSE, median per-scene R²) on held-out blocks
     per_scene: pd.DataFrame
     importance: pd.DataFrame
-    cv: pd.DataFrame = field(default_factory=pd.DataFrame)
+    units: str = "°C"
 
-    def predict(self, X) -> np.ndarray:
-        """Predicted anomaly, in kelvin."""
-        return self.rf.predict(X)
+    def predict(self, X, keys) -> np.ndarray:
+        """Predicted LST in °C. ``keys`` gives the overpass of each row."""
+        X = np.asarray(X)
+        keys = np.asarray(keys)
+        out = np.full(len(X), np.nan)
+        for k in np.unique(keys):
+            if k in self.models:
+                s = keys == k
+                out[s] = self.models[k].predict(X[s])
+        return out
+
+    def scene_model(self, key):
+        return self.models[key]
 
     def summary(self) -> str:
-        return (f"pattern  MAE {self.pattern[0]:.2f} K · RMSE {self.pattern[1]:.2f} K · "
-                f"R² {self.pattern[2]:.3f}\n"
-                f"absolute MAE {self.absolute[0]:.2f} K · RMSE {self.absolute[1]:.2f} K · "
-                f"R² {self.absolute[2]:.3f}   (same error, larger denominator)")
+        return (f"{len(self.models)} per-overpass models · held-out spatial blocks: "
+                f"MAE {self.overall[0]:.2f} °C · RMSE {self.overall[1]:.2f} °C · "
+                f"median per-scene R² {self.overall[2]:.3f}")
 
 
-def train(cfg, h, cross_validate: bool = True, verbose: bool = True) -> Fit:
-    """Train one model on the pooled samples and evaluate it."""
-    scene_mean = {k: h.y[h.scene_key == k].mean() for k in set(h.scene_key)}
-    sm = np.array([scene_mean[k] for k in h.scene_key])
-    y_anom = h.y - sm
+def train(cfg, h, verbose: bool = True, **_ignored) -> Fit:
+    """Train one model per overpass on absolute LST (°C) and evaluate on held-out blocks."""
+    block_px = max(1, int(round(cfg.cv_block_m / cfg.res_coarse)))
+    models, rows, imps = {}, [], []
+    tr_all, te_all = [], []
+    pred_te = np.full(len(h.y), np.nan)
 
-    strata = temperature_strata(y_anom, cfg.n_strata)
-    idx = np.arange(len(y_anom))
-    i_tr, i_te = train_test_split(idx, test_size=cfg.test_size,
-                                  random_state=cfg.seed_split, stratify=strata)
-
-    rf = RandomForestRegressor(n_estimators=cfg.rf_estimators, max_depth=cfg.rf_max_depth,
-                               min_samples_leaf=cfg.rf_min_leaf,
-                               random_state=cfg.seed_model, n_jobs=-1)
-    rf.fit(h.X[i_tr], y_anom[i_tr])
-
-    pa, ta = rf.predict(h.X[i_te]), y_anom[i_te]
-    pb, tb = pa + sm[i_te], h.y[i_te]
-    pattern, absolute = metrics(ta, pa), metrics(tb, pb)
-
-    if verbose:
-        levels = np.array(list(scene_mean.values())) - 273.15
-        print(f"{cfg.mode}: anomaly target | scene levels {levels.min():.1f}–"
-              f"{levels.max():.1f} °C | anomaly std {y_anom.std():.2f} K")
-        print(f"  train {len(i_tr):,} · test {len(i_te):,} "
-              f"({int((1 - cfg.test_size) * 100)}/{int(cfg.test_size * 100)}, "
-              f"stratified by temperature)\n")
-        print("=" * 68)
-        print(f"ACCURACY ({cfg.mode}, {h.n_scenes} scenes pooled, held-out "
-              f"{int(cfg.test_size * 100)} %)")
-        print(f"  SPATIAL PATTERN (anomaly)    MAE {pattern[0]:.2f} K  "
-              f"RMSE {pattern[1]:.2f} K  R² {pattern[2]:.3f}")
-        print(f"  ABSOLUTE LST (reconstructed) MAE {absolute[0]:.2f} K  "
-              f"RMSE {absolute[1]:.2f} K  R² {absolute[2]:.3f}")
-        print("=" * 68)
-
-    # per-scene accuracy, with each scene's own spread for context
-    rows, k_te = [], h.scene_key[i_te]
-    for key in sorted(set(k_te)):
-        s = k_te == key
-        if s.sum() < 50:
+    keys = [k for k in dict.fromkeys(h.scene_key)]          # preserves order
+    for k in keys:
+        idx = np.where(h.scene_key == k)[0]
+        if len(idx) < cfg.min_train_px:
             continue
-        ma, ra, r2a = metrics(ta[s], pa[s])
-        mb, rb, _ = metrics(tb[s], pb[s])
-        rows.append({"date": key[:10], "utc": key[11:], "mode": cfg.mode,
-                     "n_test_px": int(s.sum()),
-                     "scene_mean_C": round(float(scene_mean[key] - 273.15), 2),
-                     "scene_std_K": round(float(h.y[h.scene_key == key].std()), 2),
-                     "MAE_pattern_K": round(ma, 2), "RMSE_pattern_K": round(ra, 2),
-                     "R2_pattern": round(r2a, 3),
-                     "MAE_abs_K": round(mb, 2), "RMSE_abs_K": round(rb, 2)})
+        a, b = block_split(h.rc[idx], block_px, cfg.test_size, cfg.seed_split)
+        i_tr, i_te = idx[a], idx[b]
+        rf = _rf(cfg)
+        rf.fit(h.X[i_tr], h.y[i_tr])
+        models[k] = rf
+        p = rf.predict(h.X[i_te])
+        pred_te[i_te] = p
+        tr_all.append(i_tr)
+        te_all.append(i_te)
+        mae, rmse, r2 = metrics(h.y[i_te], p)
+        rows.append({"date": k[:10], "utc": k[11:], "mode": cfg.mode,
+                     "local_hour": _hour(h, k),
+                     "n_train_px": len(i_tr), "n_test_px": len(i_te),
+                     "scene_mean_C": round(float(h.y[idx].mean()), 2),
+                     "scene_std_C": round(float(h.y[idx].std()), 2),
+                     "MAE_C": round(mae, 2), "RMSE_C": round(rmse, 2), "R2": round(r2, 3),
+                     "bias_C": round(float((p - h.y[i_te]).mean()), 3)})
+        imps.append(rf.feature_importances_)
+
+    if not models:
+        raise RuntimeError("no scene had enough clean pixels to train a model")
+
+    tr, te = np.concatenate(tr_all), np.concatenate(te_all)
     per_scene = pd.DataFrame(rows)
-    per_scene.to_csv(cfg.path("products", f"accuracy_by_scene_{cfg.mode}.csv"), index=False)
-    if verbose and len(per_scene):
-        print(f"\nper-scene: median pattern R² {per_scene.R2_pattern.median():.3f} · "
-              f"RMSE {per_scene.RMSE_pattern_K.median():.2f} K")
-        print("  read R² beside scene_std_K - a uniform scene offers little to resolve, "
-              "so a low value there is expected")
+    mae_all, rmse_all, _ = metrics(h.y[te], pred_te[te])
+    overall = (mae_all, rmse_all, float(per_scene.R2.median()))
+    per_scene.to_csv(cfg.path("products", f"accuracy_by_scene_{cfg.key}.csv"), index=False)
 
-    cv = pd.DataFrame()
-    if cross_validate and len(set(h.scene_key)) >= 3:
-        gkf = GroupKFold(n_splits=min(5, len(set(h.scene_key))))
-        folds = []
-        for f, (a, b) in enumerate(gkf.split(h.X, y_anom, h.scene_key), 1):
-            m_ = RandomForestRegressor(n_estimators=60, max_depth=cfg.rf_max_depth,
-                                       min_samples_leaf=cfg.rf_min_leaf,
-                                       random_state=cfg.seed_model, n_jobs=-1)
-            m_.fit(h.X[a], y_anom[a])
-            ma, ra, r2a = metrics(y_anom[b], m_.predict(h.X[b]))
-            folds.append({"fold": f, "n_test": len(b), "MAE_K": round(ma, 2),
-                          "RMSE_K": round(ra, 2), "R2": round(r2a, 3)})
-        cv = pd.DataFrame(folds)
-        cv.to_csv(cfg.path("products", f"cv_scene_grouped_{cfg.mode}.csv"), index=False)
-        if verbose:
-            print(f"\nleave-scene-out CV ({len(cv)} folds): mean R² {cv.R2.mean():.3f} · "
-                  f"RMSE {cv.RMSE_K.mean():.2f} K")
-
-    imp = (pd.DataFrame({"feature": list(cfg.features)[:rf.n_features_in_],
-                         "importance": rf.feature_importances_})
+    imp = (pd.DataFrame({"feature": list(cfg.features),
+                         "importance": np.mean(imps, axis=0),
+                         "importance_sd": np.std(imps, axis=0)})
            .sort_values("importance", ascending=False))
-    imp.to_csv(cfg.path("products", f"feature_importance_{cfg.mode}.csv"), index=False)
+    imp.to_csv(cfg.path("products", f"feature_importance_{cfg.key}.csv"), index=False)
+
+    fit = Fit(models=models, y=h.y, train_idx=tr, test_idx=te, overall=overall,
+              per_scene=per_scene, importance=imp)
     if verbose:
-        print("\nfeature importance:")
-        print(imp.to_string(index=False))
+        print(f"{cfg.mode}: {len(models)} per-overpass models, target LST in °C")
+        print(f"  hold-out: {int(cfg.test_size * 100)} % of ~{cfg.cv_block_m} m spatial "
+              f"blocks in every scene ({len(te):,} pixels)\n")
+        print("=" * 68)
+        print(f"ACCURACY ({cfg.mode}, held-out spatial blocks)")
+        print(f"  MAE {overall[0]:.2f} °C · RMSE {overall[1]:.2f} °C · "
+              f"median per-scene R² {overall[2]:.3f}")
+        print(f"  per-scene RMSE {per_scene.RMSE_C.min():.2f}–{per_scene.RMSE_C.max():.2f} °C")
+        print("=" * 68)
+        print("  read R² beside scene_std_C: a uniform scene offers little to resolve, so a "
+              "low R² there is expected - compare MAE instead")
+        print("\nfeature importance (mean across scenes):")
+        print(imp.round(3).to_string(index=False))
+    return fit
 
-    return Fit(rf=rf, y_anom=y_anom, scene_mean=scene_mean, train_idx=i_tr, test_idx=i_te,
-               pattern=pattern, absolute=absolute, per_scene=per_scene,
-               importance=imp, cv=cv)
 
+def save(cfg, fit: Fit, include_models: bool = False) -> str:
+    """Write the run's model metadata; optionally the per-scene forests too.
 
-def save(cfg, fit: Fit) -> str:
-    """Persist the model with the metadata needed to use it safely later.
-
-    A fitted Random Forest records only how many columns it expects, not their names or
-    order, so the feature list is stored alongside it. Loading a model without checking
-    that list against the current configuration risks predictions that are silently wrong
-    rather than obviously broken.
+    Per-overpass forests are cheap to refit from the harvest cache (seconds per scene) and
+    large on disk (tens of MB each), so by default only the metadata is written and
+    :func:`lstpipe.session.load` refits them. Pass ``include_models=True`` to keep them.
     """
-    path = cfg.cache("model")
-    joblib.dump(fit.rf, path, compress=3)
-    meta = {"feature_names": list(cfg.features),
-            "n_features": int(fit.rf.n_features_in_),
+    meta = {"feature_names": list(cfg.features), "n_features": len(cfg.features),
             "run_key": cfg.key, "mode": cfg.mode, "study_area": cfg.name,
             "trained": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "target": "anomaly (pixel minus scene mean), kelvin",
-            "split": f"{int((1 - cfg.test_size) * 100)}/{int(cfg.test_size * 100)} "
-                     f"stratified by temperature quantile",
-            "pattern_MAE_K": round(fit.pattern[0], 3),
-            "pattern_R2": round(fit.pattern[2], 4),
+            "scheme": "one Random Forest per overpass",
+            "target": "absolute land surface temperature, degrees Celsius",
+            "split": f"{int(cfg.test_size * 100)} % of {cfg.cv_block_m} m spatial blocks "
+                     f"held out per scene",
+            "n_scenes": len(fit.models), "scenes": sorted(fit.models),
+            "MAE_C": round(fit.overall[0], 3), "RMSE_C": round(fit.overall[1], 3),
+            "median_scene_R2": round(fit.overall[2], 4),
             "params": {"n_estimators": cfg.rf_estimators, "max_depth": cfg.rf_max_depth,
                        "min_samples_leaf": cfg.rf_min_leaf}}
     with open(cfg.cache("model_meta"), "w") as fh:
         json.dump(meta, fh, indent=2)
-    print(f"model saved: {path.name} ({path.stat().st_size / 1e6:.1f} MB)")
-    return str(path)
+    if include_models:
+        joblib.dump(fit.models, cfg.cache("model"), compress=3)
+        print(f"models saved: {cfg.cache('model').name}")
+    print(f"model metadata saved: {cfg.cache('model_meta').name}")
+    return str(cfg.cache("model_meta"))
 
 
 def load(cfg, path: str | None = None):
-    """Load a saved model and verify it belongs to this run and expects these features."""
+    """Load saved per-scene models and verify they belong to this run."""
     path = path or str(cfg.cache("model"))
-    rf = joblib.load(path)
-    meta_path = (cfg.cache("model_meta") if path == str(cfg.cache("model"))
-                 else path.replace(".joblib", "_meta.json"))
-    with open(meta_path) as fh:
+    with open(cfg.cache("model_meta")) as fh:
         meta = json.load(fh)
     if meta.get("run_key") and meta["run_key"] != cfg.key:
         raise ValueError(f"model belongs to {meta['run_key']}, not {cfg.key}: {path}")
     if tuple(meta["feature_names"]) != tuple(cfg.features):
         raise ValueError("feature mismatch between the saved model and this configuration:\n"
                          f"  model:  {meta['feature_names']}\n  config: {list(cfg.features)}")
-    print(f"loaded model trained {meta['trained']} ({meta['n_features']} features)")
-    return rf, meta
+    if "scheme" not in meta:
+        raise ValueError("this model was written by v2.0 (pooled anomaly model, Kelvin). "
+                         "It is not compatible with v2.1 - re-run 01_pipeline.")
+    models = joblib.load(path)
+    print(f"loaded {len(models)} per-overpass models trained {meta['trained']}")
+    return models, meta

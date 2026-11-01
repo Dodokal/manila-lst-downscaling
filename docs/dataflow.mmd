@@ -1,0 +1,43 @@
+flowchart TD
+    classDef src fill:#E8F1F8,stroke:#065A82,color:#0B2A3F
+    classDef step fill:#FFFFFF,stroke:#555555,color:#111111
+    classDef out fill:#FBE9E5,stroke:#B2182B,color:#3A0A0A
+    classDef gate fill:#FFF6D6,stroke:#B8860B,color:#3A2A00
+
+    ECO[("ECOSTRESS L2T_LSTE v002<br/>LST · QC · cloud · water<br/>(NASA LP DAAC, earthaccess)")]:::src
+    S2[("Sentinel-2 L2A<br/>6 bands + SCL<br/>(Earth Search STAC)")]:::src
+    STAT[("Copernicus DEM 30 m<br/>ESA WorldCover 10 m")]:::src
+
+    A1["1 · acquire.screen_and_download<br/>valid-pixel screen over HTTPS → manifest"]:::step
+    P1["2 · preprocess.prepare_scene  (°C)<br/>QC bits 2-3 stripes + halo · cloud + buffer<br/>scan-line destriping · cold/hot outliers<br/>shoreline flag · no gap filling"]:::step
+    G1{"grade A / B / C"}:::gate
+    REJ["rejected_scenes_*.csv<br/>reason per overpass"]:::out
+    C1["3 · covariates.s2_for_date<br/>per-pixel SCL cloud mask · median of clear looks<br/>±15 → ±30 → ±60 d for still-cloudy pixels"]:::step
+    GR["covariates.build_grids<br/>70 m + 10 m grids · DEM · WorldCover tiles"]:::step
+    H1["4 · harvest.collect<br/>clean, non-shore 70 m pixels + row/col<br/>→ harvest cache (.npz)"]:::step
+    M1["5 · model.train<br/>one Random Forest per overpass<br/>target: absolute LST °C<br/>~1 km spatial blocks held out"]:::step
+    MAP["6 · products.per_scene_maps<br/>10 m prediction + 70 m residual<br/>exact 70 m closure · blank where unobserved<br/>cut at WorldCover shoreline"]:::step
+    SEL{"grade A/B and<br/>09-16 h (Day)"}:::gate
+    COMP["7 · products.composites<br/>two-way mean (pixel + overpass)<br/>blank if < 5 clean overpasses"]:::step
+    HOT["products.hot_days<br/>share of clean overpasses above threshold"]:::step
+    DN["products.day_night_layers<br/>diurnal range · compound risk · no-relief"]:::step
+    VAL["02_validation · diagnostics<br/>accuracy · residuals · land cover · hour · grades"]:::step
+
+    O1["per_scene_day/night/*_10m_C.tif<br/>*_70m_C.tif · inventory_*.csv"]:::out
+    O2["MEAN_LST · MEAN_LST_SE · P95_LST<br/>HOTSPOT_FREQ · OBS_COUNT"]:::out
+    O3["HOTFRAC_* (fraction, not days)"]:::out
+    O4["DIURNAL_RANGE · COMPOUND_RISK<br/>NO_RELIEF_ZONE"]:::out
+
+    ECO --> A1 --> P1 --> G1
+    G1 -- C --> REJ
+    G1 -- "A / B" --> H1
+    S2 --> C1 --> H1
+    STAT --> GR --> P1
+    GR --> C1
+    H1 --> M1 --> MAP --> O1
+    C1 --> MAP
+    O1 --> SEL --> COMP --> O2
+    SEL --> HOT --> O3
+    O2 --> DN --> O4
+    H1 --> VAL
+    M1 --> VAL

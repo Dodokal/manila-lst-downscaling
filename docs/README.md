@@ -1,167 +1,159 @@
-# High-Resolution Urban Heat Mapping - Tondo, Manila
+# High-Resolution Urban Heat Mapping - Tondo, Manila  (v2.1)
 
-Downscaling ECOSTRESS land surface temperature from 70 m to 10 m, one map per satellite
-overpass, for neighbourhood-scale heat-vulnerability assessment.
+Downscaling ECOSTRESS land surface temperature (LST) from 70 m to 10 m, one map per
+satellite overpass, for neighbourhood-scale heat-vulnerability assessment.
 
-Geo-Humanitarian Research (Z_GIS), Paris Lodron University of Salzburg
-in partnership with Médecins Sans Frontières
+Geo-Humanitarian Research (Z_GIS), Paris Lodron University of Salzburg,
+in partnership with Médecins Sans Frontières.
+
+> **v2.1 answers MSF's delivery feedback of 06 Oct 2026.** All temperatures are now in
+> °C, there is no anomaly training, Sentinel-2 is used pixel by pixel with no scene
+> cloud threshold, and the ECOSTRESS stripes are removed at the source (QC bits 2-3).
+> The evidence is in [`CLEANING_EVIDENCE.md`](CLEANING_EVIDENCE.md); what changed is in
+> [`CHANGELOG.md`](CHANGELOG.md). **Products in `products/` were written by v2.0 and must
+> be regenerated** by re-running `01_pipeline` with `rebuild=True`.
 
 ---
 
-## Layout
+## Data flow
 
-```
-project/
-├── lstpipe/              the pipeline - 11 modules, ~2,400 lines
-├── notebooks/            5 notebooks - ~160 lines of code in total
-├── tests/                equivalence and unit tests
-├── docs/                 this file, MODULES.md, OUTPUTS.md
-└── requirements.txt
-```
+![Data flow](img/dataflow.png)
 
-Processing lives in the package; the notebooks are a thin, readable interface to it. A
-production run is five function calls.
+Source: [`dataflow.mmd`](dataflow.mmd) (Mermaid).
 
 ## Quick start
 
-```python
-from lstpipe import Config, run_pipeline
+### 1. Prerequisites (once)
 
-cfg = Config.manila(mode="Day")     # or "Night"
-result = run_pipeline(cfg)
+| What | How |
+|---|---|
+| Python 3.11-3.13 | a clean virtual environment is strongly recommended - MSF's install picked up a conflicting `rasterio` from another environment |
+| Packages | `python -m venv .venv` → activate → `pip install -r requirements.txt` → `python -m ipykernel install --user --name lst-v21` and pick the **lst-v21** kernel in Jupyter |
+| NASA Earthdata account | free, https://urs.earthdata.nasa.gov - needed for ECOSTRESS downloads |
+| Earthdata login | in the notebook: `earthaccess.login(persist=True)`. The first time it asks for user name and password and stores them in a `.netrc` file in your home folder; afterwards login is silent. Alternatively set environment variables `EARTHDATA_USERNAME` and `EARTHDATA_PASSWORD` before starting Jupyter. |
+| Internet access | LP DAAC (ECOSTRESS), `earth-search.aws.element84.com` (Sentinel-2, Copernicus DEM), `esa-worldcover.s3.eu-central-1.amazonaws.com`. No other keys; `AWS_NO_SIGN_REQUEST=YES` is set automatically for the public buckets. |
+
+### 2. Configure - in the notebook, not in `config.py`
+
+Every setting is a keyword of the `Config` constructor, set in the notebook cell:
+
+```python
+from lstpipe import Config
+cfg = Config.manila(mode="Day")                       # or mode="Night"
+cfg = Config.for_city("vienna", (16.18, 48.12, 16.58, 48.33), "EPSG:32633",
+                      "Europe/Vienna", mode="Day", lst_min_c=None)
 ```
 
-Run `notebooks/01_pipeline.ipynb` twice - once per mode - then the others in order.
+Notebooks load `%autoreload`, so if you do edit `lstpipe/*.py` the change is picked up
+without restarting the kernel.
+
+### 3. Run
 
 | Notebook | Purpose | Needs |
 |---|---|---|
-| `01_pipeline` | produce all maps and composites | Earthdata login |
+| `01_pipeline` | all per-scene maps, composites, hot layers, scene grades | Earthdata login; run once per mode |
 | `01b_pipeline_stepwise` | the same, with intermediates exposed | for development |
-| `02_validation` | diagnostics and accuracy analysis | `01` for that mode |
-| `03_transferability` | Addis Ababa and Valenzuela tests | `01` |
-| `04_synthesis` | day–night layers, delivery inventory | `01` for **both** modes |
+| `02_validation` | accuracy, residuals, land cover, time of day, scene quality | `01` for that mode |
+| `04_synthesis` | day–night layers, delivery inventory | `01` for **both** modes, same city |
+| `05_new_dates_or_city` | running new dates or another city | Earthdata login |
+| `legacy/03_transferability_v20` | retired - see below | - |
 
-## Requirements
+## Method (v2.1)
 
-Python 3.11+, a NASA Earthdata account, and `requirements.txt`. Authenticate once with
-`earthaccess.login(persist=True)`. `AWS_NO_SIGN_REQUEST` is set automatically for the
-public Copernicus DEM and WorldCover buckets.
+1. **Screen** each ECOSTRESS L2T_LSTE **Collection 2 (v002)** granule over HTTPS; download
+   those that pass.
+2. **Clean** (`preprocess.prepare_scene`), converting to °C immediately:
+   QC mandatory bits 0-1 ∈ {best, nominal}; **QC bits 2-3 = 00** (removes the flagged
+   stripe lines) plus a 2-pixel halo; cloud and cloud holes plus a 2-pixel buffer;
+   detector-line offsets corrected along the scan direction measured from the stripe
+   flags; undetected cloud removed as cold outliers and below a physical floor (15 °C in
+   Manila); shoreline pixels flagged. **No gap filling.**
+3. **Grade** every overpass: A ≥ 60 % of the land area clean, B ≥ 30 %, C rejected
+   (ECOSTRESS cloud > 20 %, too little clean land, or residual striping > 0.8 °C). Each
+   rejection is logged with its reason.
+4. **Sentinel-2 per pixel**: no scene cloud-cover threshold; clouds, shadows and cirrus
+   masked with the Scene Classification Layer; median of clear looks within ±15 days,
+   cloudy pixels filled from ±30, then ±60 days.
+5. **Train one Random Forest per overpass** on that overpass's clean 70 m pixels, target
+   **absolute LST in °C** (NASA ARSET / data-mining-sharpener design). Accuracy on ~1 km
+   spatial blocks held out within each scene.
+6. **Map at 10 m**: the scene's model at 10 m plus its 70 m residual, iterated so each
+   10 m block averages to the ECOSTRESS observation (median closure error < 0.01 °C in
+   the offline test). Blank where ECOSTRESS did not observe; cut at the 10 m shoreline.
+7. **Composite** grade A/B overpasses inside `product_hours` (Day: 09-16 h) with a two-way
+   (pixel + overpass) model that removes footprint seams; blank where < 5 clean
+   overpasses; observation-count and standard-error layers alongside.
 
-## Method
+## Accuracy
 
-1. **Screen** every ECOSTRESS granule over HTTPS; download only those that pass.
-2. **Mask** with the QC bitmask plus water and cloud masks.
-3. **Repair** documented detector gaps (error codes −9998 / −9997) by along-track
-   interpolation. Filled pixels are excluded from training, retained in maps.
-4. **Pair** each thermal scene with its own Sentinel-2 composite from a ±15-day window.
-5. **Train** one Random Forest on the pooled samples, predicting the anomaly.
-6. **Apply** per overpass, restore that scene's level, and apply a mass-conserving residual
-   correction.
-7. **Validate** on a held-out 30 % stratified by temperature, per scene, by leave-scene-out
-   cross-validation, and by transfer to two other cities.
-
-## Two decisions that determine the results
-
-**Per-scene Sentinel-2 pairing.** An earlier version reused one multi-year optical
-composite for every thermal scene, so the predictors were identical across overpasses and
-the model could not distinguish them - pooled R² ≈ 0.002. Pairing per scene cut the median
-optical–thermal gap from 57 days to about two and is the single largest improvement in the
-project's history.
-
-**Anomaly target.** Scenes here are internally uniform, often under 1 K of spread, while
-the level differs by tens of degrees between overpasses. Asking for absolute temperature
-forces the model to infer that level from reflectance alone - impossible, since weather,
-season and hour leave no optical signature. Being 6 K wrong on a scene with 1 K of internal
-spread drives R² to about −40 even when the pattern is correct. The level comes from
-ECOSTRESS instead, through the residual correction.
-
-## Accuracy (Day, 31 overpasses, 2024–2026)
-
-| Metric | Value |
-|---|---|
-| Mean absolute error | **2.34 K** |
-| RMSE | **3.60 K** |
-| Spatial-pattern R² | **0.157** |
-| Median per-scene pattern R² | 0.066 |
-| Leave-scene-out CV R² | 0.012 |
-| Median optical–thermal gap | 2.0 days |
-
-**Quote the pattern R².** A second figure near 0.8 exists for reconstructed absolute
-temperature; it carries identical MAE and RMSE and differs only because the variance
-denominator grows once the scene level is added back. It is not additional skill.
+Accuracy figures are written by `01_pipeline` to `products/accuracy_by_scene_<area>_<mode>.csv`
+and `models/<area>_<mode>_rf_meta.json`. **Quote per-scene MAE and RMSE in °C on held-out
+spatial blocks and the median per-scene R².** Do not pool R² across overpasses: between-scene
+level differences would inflate it. (The v2.0 table that stood here was computed on the
+uncleaned data and the anomaly target and no longer applies.)
 
 ## Known limits
 
-- **Land surface temperature is not air temperature.** Radiometric surface readings; 50 °C
-  on a midday roof is normal and says nothing directly about ambient conditions.
-- **Hot-day counts are not a climate trend.** Per-year exceedance correlates at +0.96 with
-  the mean temperature of whichever scenes were cloud-free. Report as observed-overpass
-  exceedance, pooled across years.
-- **Skill scales with scene contrast** (r = +0.50). On near-uniform scenes there is little
-  to resolve, so R² goes negative by construction, not by failure.
-- **Elevation acts as a location proxy** in flat terrain, which is why cross-climate
-  transfer fails.
-- **Per-scene coverage 52–63 %**, set by the ECOSTRESS swath and masking.
-- **Time of day changes the spatial pattern**, not only the level: a single all-day model
-  scores −0.06 on afternoon scenes where a band-specific model scores +0.17.
+- **LST is not air temperature.** Radiometric surface readings; 50 °C on a midday roof is
+  normal and says nothing directly about ambient conditions.
+- **Hot-overpass layers are not a climate trend.** They are the share of clean overpasses
+  above the threshold, and which overpasses were clean (and at what hour) varies by year.
+- **Per-scene maps have gaps** where ECOSTRESS was cloudy or flagged (including the
+  diagonal QC stripe lines). This is deliberate: a gap is better than an invented value.
+  Composites fill them from other overpasses.
+- **A faint scan-overlap texture** (perpendicular to the stripe lines, a few tenths of a
+  degree) can be visible in low-contrast dawn/night scenes. It is not line-coherent, so it
+  is not removed; it averages out in composites.
+- **Scan-block level steps** between flagged stripe lines cannot be separated from real
+  urban contrast; scenes where they are severe are rejected through grading rather than
+  "repaired".
+- **Skill scales with scene contrast.** On near-uniform scenes there is little to resolve.
 
 ## Transferability
 
-| Test | City | Result |
-|---|---|---|
-| Cross-climate | Addis Ababa, 2,300 m | as-is **R² −2.16**; without elevation −0.02; retrained **+0.32** |
-| Near-transfer | Valenzuela City | same climate and terrain, no overlap with training |
-
-Addis fails because elevation there lies entirely outside the trained range (0 % feature
-overlap) and a Random Forest cannot extrapolate. Valenzuela isolates whether that was
-environmental mismatch or a limitation of the method.
-
-**The method transfers; the fitted model does not.** Retraining takes hours; the pipeline
-is unchanged.
+Retired. With one model per overpass, a new city is simply run through `01_pipeline`
+with `Config.for_city(...)`; there is no Manila model to transfer.
 
 ## Tests
 
 ```bash
-python tests/test_equivalence.py    # refactor reproduces the original numerics exactly
-python tests/test_units.py          # component behaviour
-python tests/test_session.py        # restoring from disk gives identical metrics
-python tests/test_paths.py          # output paths independent of working directory
-python tests/test_isolation.py      # study areas cannot read each other's caches
+python tests/test_v21.py                 # QC decoding, destriping, real granules, °C models, composites, S2 masking
+python tests/test_integration_offline.py # end-to-end on the real Manila granules, S2 mocked
+python tests/test_units.py               # components
+python tests/test_session.py             # restore from disk gives identical metrics
+python tests/test_paths.py               # output paths independent of working directory
+python tests/test_isolation.py           # study areas cannot read each other's caches
 ```
 
-`test_equivalence.py` compares the package against an inline reimplementation of each
-original notebook cell and requires agreement to 1e-12. It is the guarantee that
-reorganising the code changed no result.
+## Troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| `... was written by v2.0 (Kelvin, no pixel coordinates)` | Old harvest cache. Re-run `01_pipeline` with `rebuild=True`. |
+| `no cached run for ... Day` in notebook 02 | `01_pipeline` has not completed for that city and mode, or the notebooks resolved different output roots. Every notebook prints `outputs -> ...`; the paths must match. |
+| `AttributeError: 'NoneType' object has no attribute 'get_fsspec_session'` | Not authenticated. Run `earthaccess.login(persist=True)`. |
+| `ModuleNotFoundError: lstpipe` or the wrong `rasterio` | The kernel is not the project environment. Select the `lst-v21` kernel (see Prerequisites). |
+| `DownloadFailure ... 502` | Transient LP DAAC error. Downloads retry; re-run later, existing files are skipped. |
+| `per_scene_maps needs the per-scene rasters` | The harvest came from cache. Pass `rebuild=True`, or use `run_pipeline`. |
+| Many scenes rejected | See `rejected_scenes_<area>_<mode>.csv`. Mostly ECOSTRESS cloud > `max_cloud_cover`; relax it or `grade_b_frac` only with care. |
+| Land cover unavailable | WorldCover tiles are now chosen from the bounding box; if it still fails, the bucket is unreachable from your network. |
 
 ## Documentation
 
 | File | Contents |
 |---|---|
 | `docs/README.md` | this file |
-| `docs/MODULES.md` | every module, its public interface, and why it exists |
+| `docs/CLEANING_EVIDENCE.md` | the pixel-level audit behind v2.1, with figures |
+| `docs/CHANGELOG.md` | v2.0 → v2.1 changes, each mapped to MSF's feedback |
+| `docs/MODULES.md` | every module and its public interface |
 | `docs/OUTPUTS.md` | catalogue of every file the pipeline writes |
-
-## Troubleshooting
-
-| Symptom | Cause and fix |
-|---|---|
-| Transfer test reports "no usable scenes" | Caused by an area-agnostic cache name in versions before 2.0.1; each area now has its own. Run `session.migrate(cfg)`, or pass `rebuild=True` to `transfer.evaluate`. |
-| `no cached run for ... Day` in notebook 02 | `01_pipeline` has not completed for that mode, or the two notebooks resolved different output roots. Every notebook prints `outputs -> ...`; the paths must match. |
-| `AttributeError: 'NoneType' object has no attribute 'get_fsspec_session'` | Not authenticated. The catalogue search succeeds without credentials, so this appears only at the first file access. Run `earthaccess.login(persist=True)`; the pipeline also calls it automatically. |
-| `ModuleNotFoundError: lstpipe` | The package is not on the path. Notebooks add the parent directory themselves; if importing elsewhere, keep `lstpipe/` beside the notebook or one level up. |
-| `DownloadFailure ... 502` | LP DAAC returned a transient server error. Downloads retry with backoff and skip a granule that still fails; re-run later to pick it up, since existing files are skipped. |
-| `MemoryError` while loading land cover | Only occurs if the tile is read before clipping. `covariates.build_grids` clips first. |
-| `per_scene_maps needs the per-scene rasters` | The harvest came from cache. Pass `rebuild=True`, or use `run_pipeline`. |
-| Blocky, low-detail maps | Low `sharpened_frac` - optical imagery was cloudy for those scenes. Check `diagnostics.scene_quality`; widening `s2_window_days` may help. |
-| No scenes pass screening | Lower `valid_pixel_threshold`, widen the date range, or raise `max_cloud_cover`. |
-
 
 ## Acknowledgment
 
 This repository contains code developed during my internship.
 
 **Developer:** Kalid Hassen Yasin (MSc)
-**Supervisor:** Dr. Getachew Workineh Gella  
-**Program:** Copernicus Master in Digital Earth  
-**Institution:** Paris Lodron University of Salzburg (PLUS)  
-**Research Group:** Geo-Humanitarian Research (Z_GIS)  
+**Supervisor:** Dr. Getachew Workineh Gella
+**Program:** Copernicus Master in Digital Earth
+**Institution:** Paris Lodron University of Salzburg (PLUS)
+**Research Group:** Geo-Humanitarian Research (Z_GIS)

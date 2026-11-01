@@ -19,12 +19,21 @@ import pandas as pd
 from .products import read_raster
 
 THERMAL = "RdYlBu_r"
+plt.rcParams.update({"font.family": "serif", "font.serif": ["Times New Roman", "DejaVu Serif"],
+                     "font.size": 12, "axes.titlesize": 13})
 DAY_C, NIGHT_C, ACCENT, BLUE = "#D6604D", "#065A82", "#1C7293", "#4393C3"
 
 
 def _save(cfg, fig, name, dpi=140):
-    path = cfg.path("quicklooks", name)
+    """Save, show once, and close.
+
+    v2.0 returned the figure as well as letting the inline backend draw it, so Jupyter
+    displayed every diagnostic figure twice.
+    """
+    path = cfg.path("quicklooks", f"{cfg.name}_{name}")
     fig.savefig(path, dpi=dpi, bbox_inches="tight")
+    plt.show()
+    plt.close(fig)
     return str(path)
 
 
@@ -50,17 +59,28 @@ def scene_comparison(cfg, path_coarse, path_fine, title=None):
     if title:
         fig.suptitle(title, fontweight="bold")
     _save(cfg, fig, f"{title or 'comparison'}.png".replace(" ", "_"))
-    return fig
+    return None
 
 
 def planner_products(cfg, comp: dict):
     """Mean, hot-spot frequency and 95th percentile."""
     arrays = comp["arrays"]
-    fig, ax = plt.subplots(1, len(arrays), figsize=(5.6 * len(arrays), 5))
-    for a_, (name, arr) in zip(np.atleast_1d(ax), arrays.items()):
+    ncol = min(3, len(arrays))
+    nrow = int(np.ceil(len(arrays) / ncol))
+    fig, ax = plt.subplots(nrow, ncol, figsize=(5.6 * ncol, 5 * nrow))
+    for a_ in np.atleast_1d(ax).ravel()[len(arrays):]:
+        a_.axis("off")
+    for a_, (name, arr) in zip(np.atleast_1d(ax).ravel(), arrays.items()):
         if "FREQ" in name:
             im = a_.imshow(arr, cmap="inferno", vmin=0, vmax=1)
             label = "fraction of overpasses"
+        elif "COUNT" in name:
+            im = a_.imshow(np.where(arr > 0, arr, np.nan), cmap="viridis")
+            label = "clean overpasses"
+        elif "_SE_" in name:
+            v = arr[np.isfinite(arr)]
+            im = a_.imshow(arr, cmap="magma_r", vmin=0, vmax=np.percentile(v, 98) if v.size else 1)
+            label = "standard error (°C)"
         else:
             v = arr[np.isfinite(arr)]
             im = a_.imshow(arr, cmap=THERMAL, vmin=np.percentile(v, 2), vmax=np.percentile(v, 98))
@@ -72,41 +92,79 @@ def planner_products(cfg, comp: dict):
                  fontsize=13, fontweight="bold")
     fig.tight_layout()
     _save(cfg, fig, f"planner_products_{cfg.mode}.png")
-    return fig
+    return None
 
 
-def contact_sheet(cfg, max_scenes: int = 12, only_good: bool = True):
-    """A grid of per-scene maps, best-quality first."""
-    graded = cfg.path("products", f"inventory_graded_{cfg.mode}.csv")
-    if graded.exists() and only_good:
-        inv = pd.read_csv(graded)
-        tifs = inv.loc[inv.quality == "GOOD", "file_10m"].tolist()[:max_scenes]
+def contact_sheet(cfg, max_scenes: int = 12, only_good: bool = True,
+                  shared_scale: bool = True):
+    """A grid of per-scene maps on one shared colour scale.
+
+    With ``shared_scale`` (default) every panel uses the same °C range, so equal colours
+    mean equal temperatures across panels - v2.0 stretched each panel separately, which made
+    a dark blue mean 8 °C in one panel and 20 °C in the next.
+    """
+    inv_p = cfg.path("products", f"inventory_{cfg.key}.csv")
+    if inv_p.exists():
+        inv = pd.read_csv(inv_p)
+        if only_good and "in_composites" in inv:
+            inv = inv[inv.in_composites.astype(bool)]
+        tifs = [t for t in inv.file_10m if os.path.exists(t)][:max_scenes]
     else:
         tifs = sorted(glob.glob(str(cfg.path("scenes",
-                      f"*_{cfg.mode}_lst_{cfg.res_fine}m_C.tif"))))[:max_scenes]
+                      f"{cfg.name}_*_{cfg.mode}_lst_{cfg.res_fine}m_C.tif"))))[:max_scenes]
     if not tifs:
         print("no maps to plot")
         return None
 
+    arrays = [read_raster(t)[0] for t in tifs]
+    if shared_scale:
+        allv = np.concatenate([a[np.isfinite(a)][::7] for a in arrays])
+        lo, hi = np.percentile(allv, [2, 98])
     cols = 3
     rows = int(np.ceil(len(tifs) / cols))
     fig, axes = plt.subplots(rows, cols, figsize=(5.0 * cols, 4.4 * rows))
     axes = np.atleast_1d(axes).ravel()
-    for a_, t in zip(axes, tifs):
-        v, _, _ = read_raster(t)
+    for a_, t, v in zip(axes, tifs, arrays):
         vv = v[np.isfinite(v)]
         if vv.size:
-            im = a_.imshow(v, cmap=THERMAL, vmin=np.percentile(vv, 2), vmax=np.percentile(vv, 98))
-            plt.colorbar(im, ax=a_, shrink=0.7)
+            vmin, vmax = (lo, hi) if shared_scale else np.percentile(vv, [2, 98])
+            im = a_.imshow(v, cmap=THERMAL, vmin=vmin, vmax=vmax)
+            plt.colorbar(im, ax=a_, shrink=0.7, label="LST (°C)")
         a_.set_title(os.path.basename(t).replace(f"{cfg.name}_", "")
-                     .replace(f"_lst_{cfg.res_fine}m_C.tif", ""), fontsize=8)
+                     .replace(f"_lst_{cfg.res_fine}m_C.tif", ""), fontsize=10)
         a_.set_xticks([]); a_.set_yticks([])
     for a_ in axes[len(tifs):]:
         a_.axis("off")
-    fig.suptitle(f"{cfg.name.title()} - {cfg.mode} scenes", fontweight="bold")
+    fig.suptitle(f"{cfg.name.title()} - {cfg.mode} scenes"
+                 + (" (shared colour scale)" if shared_scale else ""), fontweight="bold")
     fig.tight_layout()
     _save(cfg, fig, f"contact_sheet_{cfg.mode}.png", dpi=130)
-    return fig
+    return None
+
+
+def time_of_day(cfg, table: pd.DataFrame):
+    """Boxplot of clean-overpass median LST by local hour (answers MSF: bias by hour?)."""
+    if table is None or not len(table):
+        print("nothing to plot")
+        return None
+    hours = sorted(table.local_hour.dropna().unique())
+    data = [table.loc[table.local_hour == hr, "median_C"].values for hr in hours]
+    fig, ax = plt.subplots(figsize=(10, 5))
+    bp = ax.boxplot(data, positions=hours, widths=0.6, patch_artist=True,
+                    medianprops=dict(color="black", lw=1.6))
+    for b, hr in zip(bp["boxes"], hours):
+        inside = cfg.product_hours is None or cfg.product_hours[0] <= hr <= cfg.product_hours[1]
+        b.set_facecolor(DAY_C if inside else "#BBBBBB"); b.set_alpha(0.8)
+    for hr, d in zip(hours, data):
+        ax.scatter(np.full(len(d), hr), d, s=18, color="k", zorder=3)
+    ax.set_xlabel("local hour of overpass")
+    ax.set_ylabel("scene median LST (°C)")
+    ax.set_title(f"{cfg.name.title()} {cfg.mode}: temperature depends strongly on overpass hour"
+                 + ("\n(coloured = used in composites)" if cfg.product_hours else ""))
+    ax.grid(axis="y", alpha=0.3)
+    fig.tight_layout()
+    _save(cfg, fig, f"time_of_day_{cfg.mode}.png")
+    return None
 
 
 def residual_panel(cfg, res: np.ndarray, by_scene: pd.DataFrame | None = None):
@@ -118,12 +176,12 @@ def residual_panel(cfg, res: np.ndarray, by_scene: pd.DataFrame | None = None):
 
     ax[0].hist(res, bins=140, color=BLUE)
     ax[0].axvline(0, color="k", lw=0.8)
-    ax[0].axvline(mu, color="red", ls="--", lw=1.2, label=f"bias {mu:+.2f} K")
+    ax[0].axvline(mu, color="red", ls="--", lw=1.2, label=f"bias {mu:+.2f} °C")
     for k in (2, 3):
         ax[0].axvline(mu + k * sd, color="orange", ls=":", lw=1)
         ax[0].axvline(mu - k * sd, color="orange", ls=":", lw=1)
     ax[0].set_yscale("log")
-    ax[0].set_xlabel("residual (K)"); ax[0].set_ylabel("pixels (log)")
+    ax[0].set_xlabel("residual (°C)"); ax[0].set_ylabel("pixels (log)")
     ax[0].set_title(f"residuals · skew {stats.skew(res):+.2f}", fontweight="bold")
     ax[0].legend(fontsize=8)
 
@@ -136,16 +194,16 @@ def residual_panel(cfg, res: np.ndarray, by_scene: pd.DataFrame | None = None):
     ax[1].set_title("Q–Q plot (tail behaviour)", fontweight="bold")
 
     if ncol == 3:
-        colors = [DAY_C if b > 0 else BLUE for b in by_scene.bias_K]
-        ax[2].barh(range(len(by_scene)), by_scene.bias_K, color=colors)
+        colors = [DAY_C if b > 0 else BLUE for b in by_scene.bias_C]
+        ax[2].barh(range(len(by_scene)), by_scene.bias_C, color=colors)
         ax[2].axvline(0, color="k", lw=0.8)
         ax[2].set_yticks(range(len(by_scene)))
         ax[2].set_yticklabels(by_scene.date, fontsize=6)
-        ax[2].set_xlabel("bias (K)")
+        ax[2].set_xlabel("bias (°C)")
         ax[2].set_title("per-scene bias", fontweight="bold")
     fig.tight_layout()
     _save(cfg, fig, f"residuals_{cfg.mode}.png")
-    return fig
+    return None
 
 
 def landcover_boxplots(cfg, min_scenes: int = 3, stat: str = "mean_C"):
@@ -153,7 +211,8 @@ def landcover_boxplots(cfg, min_scenes: int = 3, stat: str = "mean_C"):
     from matplotlib.patches import Patch
     frames = {}
     for m in ("Day", "Night"):
-        p = cfg.path("products", f"zonal_stats_lulc_{m}.csv")
+        c = cfg if cfg.mode == m else cfg.with_mode(m)
+        p = c.path("products", f"zonal_stats_lulc_{c.key}.csv")
         if p.exists():
             d = pd.read_csv(p)
             if len(d):
@@ -210,7 +269,7 @@ def landcover_boxplots(cfg, min_scenes: int = 3, stat: str = "mean_C"):
                           edgecolor="k", linewidth=0.6)
         ax[1].set_yticks(np.arange(len(order))[::-1])
         ax[1].set_yticklabels(order)
-        ax[1].set_xlabel("day − night median LST (K)")
+        ax[1].set_xlabel("day − night median LST (°C)")
         ax[1].set_title("diurnal range by land cover\n(red = retains heat overnight)",
                         fontweight="bold")
         ax[1].grid(axis="x", alpha=0.25)
@@ -219,7 +278,7 @@ def landcover_boxplots(cfg, min_scenes: int = 3, stat: str = "mean_C"):
                        va="center", fontsize=8)
     fig.tight_layout()
     _save(cfg, fig, "landcover_boxplots.png", dpi=150)
-    return fig
+    return None
 
 
 def day_night_panel(cfg, layers: dict):
@@ -243,7 +302,7 @@ def day_night_panel(cfg, layers: dict):
                  fontsize=14, fontweight="bold")
     fig.tight_layout()
     _save(cfg, fig, "daynight_structure.png")
-    return fig
+    return None
 
 
 def transfer_panel(cfg, result):
@@ -267,4 +326,4 @@ def transfer_panel(cfg, result):
     ax[1].set_title("feature-space overlap", fontweight="bold")
     fig.tight_layout()
     _save(cfg, fig, f"transfer_{result.city}_{cfg.mode}.png")
-    return fig
+    return None

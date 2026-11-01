@@ -19,7 +19,7 @@ rng = np.random.default_rng(0)
 
 # ---------------------------------------------------------------- config
 cfg = Config.manila(mode="Day", base_dir="/tmp/units")
-assert cfg.windows == ((6, 18),)
+assert cfg.windows == ((6, 18),) and cfg.product_hours == (9, 16)
 assert Config.manila(mode="Night", base_dir="/tmp/units").windows == ((18, 23), (0, 5))
 assert cfg.hot_threshold_c == 35.0
 assert Config.manila(mode="Night", base_dir="/tmp/units").hot_threshold_c == 26.0
@@ -62,36 +62,7 @@ X = cov.stack(feats, cfg.features, m_)
 assert X.shape == (m_.sum(), 10) and np.isfinite(X).all()
 print("valid_mask and stack: non-finite excluded, order preserved: PASS")
 
-# ---------------------------------------------------------------- preprocess
-scene = np.full((60, 50), 305.0)
-scene[10:14, :] = -9998.0
-scene[30, 20] = 1e4
-bad = pre.detect_fill(scene)
-assert bad[10:14, :].all() and bad[30, 20] and bad.sum() == 4 * 50 + 1
-clean, fmask, rep = pre.clean_scene(scene)
-assert rep["filled_px"] > 0 and np.isfinite(clean[10:14, :]).all()
-assert abs(np.nanmean(clean[10:14, :]) - 305.0) < 1e-6
-print("fill detection and interpolation on a uniform scene: PASS")
-
-# a gap longer than the limit must be left alone rather than invented
-big = np.full((60, 50), 305.0)
-big[10:40, :] = -9998.0
-_, fm2, rep2 = pre.clean_scene(big)
-assert rep2["unfilled_px"] > 0, "gaps beyond max_gap must not be filled"
-print(f"gaps longer than {pre.FILL_MAX_GAP} lines left as NaN: PASS")
-
 # ---------------------------------------------------------------- model
-y = np.concatenate([rng.normal(0, 1, 5000), rng.normal(9, 0.5, 120)])
-st = mdl.temperature_strata(y, 10)
-assert len(set(st)) >= 8
-assert (np.bincount(st) >= 2).all(), "no stratum may be too small to split"
-hot = y >= np.percentile(y, 99)
-from sklearn.model_selection import train_test_split
-i1, i2 = train_test_split(np.arange(len(y)), test_size=0.3, random_state=11, stratify=st)
-a = np.zeros(len(y), bool); a[i1] = True
-assert (hot & a).sum() > 0 and (hot & ~a).sum() > 0, "the hot tail must appear on both sides"
-print("temperature strata: viable bins, hot tail present in both splits: PASS")
-
 mae, rmse, r2 = mdl.metrics(np.array([1., 2, 3]), np.array([1., 2, 3]))
 assert mae == 0 and rmse == 0 and r2 == 1
 print("metrics: exact on a perfect fit: PASS")
@@ -106,11 +77,11 @@ class _SD:
     def __init__(self, hour): self.scene = _S(hour); self.s2_info = {"gap_days": 2.0, "n_items": 3}; self.lst = object()
 
 n = 5000
-h = Harvest(X=rng.random((n, 10)), y=300 + rng.random(n) * 8,
+h = Harvest(X=rng.random((n, 10)), y=30 + rng.random(n) * 8,
             scene_key=np.array([f"2025-0{i%5+1}-15_0830" for i in range(n)], dtype=object),
             lulc=rng.choice([10, 50, 80], n).astype(float),
             scenes={f"2025-0{i+1}-15_0830": _SD(8 + i) for i in range(5)},
-            gaps=pd.DataFrame())
+            gaps=pd.DataFrame(), rc=rng.integers(0, 200, (n, 2)))
 assert h.has_rasters
 
 with tempfile.TemporaryDirectory() as d:
@@ -119,7 +90,7 @@ with tempfile.TemporaryDirectory() as d:
     back = Harvest.load(p)
     assert np.allclose(back.X, h.X) and np.allclose(back.y, h.y)
     assert np.array_equal(back.scene_key.astype(str), h.scene_key.astype(str))
-    assert np.allclose(back.lulc, h.lulc)
+    assert np.allclose(back.lulc, h.lulc) and np.array_equal(back.rc, h.rc)
     assert back.n_scenes == h.n_scenes
     assert [back.scenes[k].scene.local_hour for k in sorted(back.scenes)] == \
            [h.scenes[k].scene.local_hour for k in sorted(h.scenes)]
@@ -140,7 +111,8 @@ print("map generation refuses a cached harvest with a clear message: PASS")
 # lulc=None survives the round trip
 h2 = Harvest(X=rng.random((100, 10)), y=rng.random(100),
              scene_key=np.array(["2025-01-15_0830"] * 100, dtype=object), lulc=None,
-             scenes={"2025-01-15_0830": _SD(9)}, gaps=pd.DataFrame())
+             scenes={"2025-01-15_0830": _SD(9)}, gaps=pd.DataFrame(),
+             rc=rng.integers(0, 50, (100, 2)))
 with tempfile.TemporaryDirectory() as d:
     p = Path(d) / "h2.npz"; h2.save(p)
     assert Harvest.load(p).lulc is None

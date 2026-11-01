@@ -1,5 +1,10 @@
 # Output catalogue
 
+> **v2.1 changes.** Tables are now named `*_<area>_<mode>.csv` (e.g. `inventory_manila_Day.csv`).
+> New: `scene_quality_*`, `rejected_scenes_*`, `time_of_day_*`, `composite_scenes_*`, and the
+> rasters `MEAN_LST_SE_<mode>`, `OBS_COUNT_<mode>`. Hot-day rasters are `HOTFRAC_*`
+> (fraction of clean overpasses) instead of `HOTDAYS_*`. Units are °C throughout.
+
 Every path derives from `BASE_DIR`, set in Part 1. `<mode>` is `Day` or `Night`.
 
 ---
