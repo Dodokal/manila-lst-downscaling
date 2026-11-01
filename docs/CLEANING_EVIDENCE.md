@@ -12,7 +12,7 @@ ECOSTRESS QC is a bit field. Bits 0-1 (mandatory QA): 00 best, 01 nominal, 10 cl
 
 ![2024-07-07](img/fig1_20240707_stripes.png)
 
-In the overpass MSF singled out (2024-07-07 22:16 UTC, 06:16 local), the flagged pixels
+In the overpass in v2.0 singled out (2024-07-07 22:16 UTC, 06:16 local), the flagged pixels
 sit **+10.6 °C** above clean pixels of the same scene; the delivered 70 m map ranged
 3.9-57.4 °C at dawn. v2.1 removes bits 2-3 ≠ 00 plus a 2-pixel halo. Bits 0-1 = 01 is
 kept: in humid 2026 scenes it covers up to ~90 % of the land and is not biased there.
@@ -22,8 +22,7 @@ kept: in humid 2026 scenes it covers up to ~90 % of the land and is not biased t
 v2.0 interpolated **down image columns** any NaN gap of ≤ 12 pixels, to repair the
 swath-product fill codes −9998/−9997. The tiled product does not use those codes, its scan
 lines run diagonally, and cloud holes, rivers and masked pixels are all NaN - so cloud
-holes were filled with vertical streaks (top row below; MSF's Vienna screenshot shows the
-same). v2.1 does not gap-fill ECOSTRESS at all.
+holes were filled with vertical streaks. v2.1 does not gap-fill ECOSTRESS at all.
 
 ![before after](img/fig2_before_after.png)
 
